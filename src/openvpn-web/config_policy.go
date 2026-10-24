@@ -212,10 +212,21 @@ func atomicRootConfig(root *os.Root, target string, content []byte) error {
 	if err = f.Close(); err != nil {
 		return err
 	}
-	return root.Rename(name, target)
+	if err = root.Rename(name, target); err != nil {
+		return err
+	}
+	dir, err := root.Open(filepath.Dir(target))
+	if err != nil {
+		return fmt.Errorf("configuration published; parent directory open failed (durability uncertain): %w", err)
+	}
+	return syncPublishedConfigDirectory(dir, (*os.File).Sync)
 }
 
 func atomicPrivateConfig(target string, content []byte) error {
+	return atomicPrivateConfigWithSync(target, content, (*os.File).Sync)
+}
+
+func atomicPrivateConfigWithSync(target string, content []byte, syncDir func(*os.File) error) error {
 	f, err := os.CreateTemp(filepath.Dir(target), ".config-*")
 	if err != nil {
 		return err
@@ -232,5 +243,8 @@ func atomicPrivateConfig(target string, content []byte) error {
 	if err = f.Close(); err != nil {
 		return err
 	}
-	return os.Rename(f.Name(), target)
+	if err = os.Rename(f.Name(), target); err != nil {
+		return err
+	}
+	return syncPublishedConfigParent(target, syncDir)
 }

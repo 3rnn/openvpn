@@ -817,32 +817,6 @@ func setupRouter(ov ovpn) *gin.Engine {
 				val = string(ep)
 			case "system.email.password":
 				val, _ = aes.AesEncrypt(val, secretKey)
-			case "system.base.max_duplicate_login":
-				n, err := strconv.Atoi(val)
-				if err != nil {
-					n = 0
-				}
-
-				if n > 0 {
-					cfg, err := initOvpnConfig()
-					if err != nil {
-						logger.Error(context.Background(), err.Error())
-						securityError(c, 500, "OpenVPN configuration unavailable")
-						return
-					}
-
-					statusLogPath := filepath.Join(ovData, "openvpn-status.log")
-					if cfg.Get("status-version") != "3" || cfg.Get("status") != statusLogPath+" 1" {
-						cfg.Set("status", statusLogPath+" 1")
-						cfg.Set("status-version", "3")
-						if err := cfg.Save(); err != nil {
-							securityError(c, 500, "OpenVPN configuration persistence failed")
-							return
-						}
-
-						ov.sendCommand("signal SIGHUP")
-					}
-				}
 			case "openvpn.ovpn_subnet", "openvpn.ovpn_subnet6":
 				_, _, err := net.ParseCIDR(val)
 				if err != nil {
@@ -865,18 +839,14 @@ func setupRouter(ov ovpn) *gin.Engine {
 				staged.Set(k, val)
 			}
 		}
-		if err := persistConfig(staged); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		reload, err := publishSettings(staged)
+		if err != nil {
+			logger.Error(context.Background(), err.Error())
+			securityError(c, 500, err.Error())
 			return
 		}
-
-		for _, key := range staged.AllKeys() {
-			viper.Set(key, staged.Get(key))
-		}
-		loadConfig()
-		if err := updateOvpnConfigChecked(); err != nil {
-			securityError(c, 500, "OpenVPN configuration persistence failed")
-			return
+		if reload {
+			ov.sendCommand("signal SIGHUP")
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "更新成功"})
 	})
@@ -1631,13 +1601,20 @@ func setupRouter(ov ovpn) *gin.Engine {
 			dataRoot, err := os.OpenRoot(ovData)
 			if err != nil {
 				logger.Error(context.Background(), err.Error())
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "client revoked; local cleanup failed", "revoked": true, "cleanup_complete": false})
 				return
 			}
 			defer dataRoot.Close()
 
-			dataRoot.Remove(filepath.Join("clients", fmt.Sprintf("%s.ovpn", name)))
-			dataRoot.Remove(filepath.Join("ccd", name))
+			// Keep the profile's certificate for a verified retry if CCD cleanup
+			// fails after EasyRSA has moved the issued certificate.
+			for _, target := range []string{filepath.Join("ccd", name), filepath.Join("clients", name+".ovpn")} {
+				if err := dataRoot.Remove(target); err != nil && !os.IsNotExist(err) {
+					logger.Error(context.Background(), err.Error())
+					c.JSON(http.StatusInternalServerError, gin.H{"message": "client revoked; local cleanup failed", "revoked": true, "cleanup_complete": false})
+					return
+				}
+			}
 
 			c.JSON(http.StatusOK, gin.H{"message": "删除客户端成功"})
 		})

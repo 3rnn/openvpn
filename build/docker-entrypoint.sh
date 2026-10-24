@@ -10,7 +10,10 @@ export EASYRSA_PKI="$OVPN_DATA/pki"
 export EASYRSA_BATCH=1
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 identity() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]{0,127}$ ]] || fail 'invalid identity'; }
-port() { [[ "$1" =~ ^[0-9]{1,5}$ ]] && ((10#$1 > 0 && 10#$1 <= 65535)) || fail 'invalid port'; }
+port() {
+ if ! [[ "$1" =~ ^[0-9]{1,5}$ ]]; then fail 'invalid port'; fi
+ if ! ((10#$1 > 0 && 10#$1 <= 65535)); then fail 'invalid port'; fi
+}
 ipv4() {
  local value=$1 a b c d oct
  [[ "$value" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || fail 'invalid IPv4'
@@ -29,7 +32,7 @@ validate_data_config() {
  local line option
  [[ ${#1} -le 65536 ]] || fail 'configuration too large'
  while IFS= read -r line || [[ -n "$line" ]]; do
-  [[ "$line" != *$'\r'* && "$line" != *'\'* ]] || fail 'invalid client configuration'
+  [[ "$line" != *$'\r'* && "$line" != *$'\\'* ]] || fail 'invalid client configuration'
   read -r option _ <<< "$line"
   case "$option" in
    ''|'#'*|';'*) ;;
@@ -41,11 +44,12 @@ validate_data_config() {
  done <<< "$1"
 }
 getsubnet() {
- local addr=${1%/*} bits=${1#*/} n mask='' byte
+ local addr=${1%/*} bits=${1#*/} mask='' byte
  ipv4 "$addr"
- [[ "$bits" =~ ^[0-9]{1,2}$ ]] && ((10#$bits <= 32)) || fail 'invalid IPv4 prefix'
+ if ! [[ "$bits" =~ ^[0-9]{1,2}$ ]]; then fail 'invalid IPv4 prefix'; fi
+ if ! ((10#$bits <= 32)); then fail 'invalid IPv4 prefix'; fi
  bits=$((10#$bits))
- for n in 1 2 3 4; do
+ for _ in 1 2 3 4; do
   if ((bits>=8)); then byte=255; bits=$((bits-8)); else byte=$((256-2**(8-bits)));bits=0;fi
   mask+="${mask:+.}$byte"
  done
@@ -59,7 +63,8 @@ load_settings() {
  OVPN_PROTO=$(jq -r '.openvpn.ovpn_proto // "udp"' "$SYSTEM_CONFIG")
  case "$OVPN_PROTO" in udp|udp4|udp6|tcp-server|tcp4-server|tcp6-server) ;;*)fail 'invalid protocol';;esac
  OVPN_MAXCLIENTS=$(jq -r '.openvpn.ovpn_max_clients // 200' "$SYSTEM_CONFIG")
- [[ "$OVPN_MAXCLIENTS" =~ ^[0-9]{1,6}$ ]] && ((10#$OVPN_MAXCLIENTS>0)) || fail 'invalid client count'
+ if ! [[ "$OVPN_MAXCLIENTS" =~ ^[0-9]{1,6}$ ]]; then fail 'invalid client count'; fi
+ if ! ((10#$OVPN_MAXCLIENTS>0)); then fail 'invalid client count'; fi
  OVPN_MANAGEMENT=$(jq -r '.openvpn.ovpn_management // "127.0.0.1:7505"' "$SYSTEM_CONFIG")
  [[ "$OVPN_MANAGEMENT" =~ ^127\.0\.0\.1:[0-9]{1,5}$ ]] || fail 'management must use loopback';port "${OVPN_MANAGEMENT##*:}"
  OVPN_SUBNET=$(jq -r '.openvpn.ovpn_subnet // "10.8.0.0/24"' "$SYSTEM_CONFIG")
@@ -182,6 +187,8 @@ client_connect() {
  source="$OVPN_DATA/connections/$key.conf"
  [[ -f "$source" && ! -L "$source" ]] || fail 'authenticated connection policy missing'
  policy=$(cat -- "$source")
+ # Replace the literal policy placeholder, not a shell expansion.
+ # shellcheck disable=SC2016
  policy=${policy//'${ifconfig_netmask}'/$mask}
  validate_data_config "$policy"
  [[ -f "$target" && -L "$target" ]] && fail 'invalid connection target'
@@ -249,7 +256,8 @@ case "${1:-}" in
   [[ "${2:-}" == true ]] || fail 'disabling authentication is prohibited'
   sed -i 's/^#auth-user-pass-verify/auth-user-pass-verify/' "$OVPN_DATA/server.conf";;
  renewcert)
-  [[ "${2:-}" =~ ^[0-9]{1,4}$ ]] && ((10#$2>0)) || fail 'invalid certificate lifetime'
+  if ! [[ "${2:-}" =~ ^[0-9]{1,4}$ ]]; then fail 'invalid certificate lifetime'; fi
+  if ! ((10#$2>0)); then fail 'invalid certificate lifetime'; fi
   load_settings;private_state;exec 9>"$OVPN_DATA/.pki.lock";flock -x 9
   /usr/share/easy-rsa/easyrsa --batch --days="$2" renew-ca
   /usr/share/easy-rsa/easyrsa --batch --days="$2" renew "$SERVER_NAME"

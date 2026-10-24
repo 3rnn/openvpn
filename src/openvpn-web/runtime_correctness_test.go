@@ -279,6 +279,16 @@ func TestRevokeRouteCRLFailurePreservesFilesAndRetries(t *testing.T) {
 		})
 	}
 	write("pki/ready.pem", pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: crlDER}))
+	// Revocation is real even if local cleanup fails. Keep the profile available
+	// for a verified retry when EasyRSA has already moved the issued certificate.
+	os.Remove(filepath.Join(ovData, "ccd/cert"))
+	os.Mkdir(filepath.Join(ovData, "ccd/cert"), 0700)
+	write("ccd/cert/blocked", []byte("fixture"))
+	if w := b.request("DELETE", "/ovpn/client/cert", nil); w.Code != 500 || !strings.Contains(w.Body.String(), `"revoked":true`) || !strings.Contains(w.Body.String(), "cleanup") {
+		t.Fatalf("cleanup failure misrepresented revocation: %d %s", w.Code, w.Body)
+	}
+	os.Remove(filepath.Join(ovData, "ccd/cert/blocked"))
+	os.Remove(filepath.Join(ovData, "ccd/cert"))
 	// EasyRSA can move the issued certificate on revoke; the retained profile supplies it on retry.
 	os.Remove(filepath.Join(pki, "issued/cert.crt"))
 	if w := b.request("DELETE", "/ovpn/client/cert", nil); w.Code != 200 {
