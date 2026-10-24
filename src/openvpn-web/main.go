@@ -1406,7 +1406,7 @@ func setupRouter(ov ovpn) *gin.Engine {
 			_, err = clientsRoot.Stat(name + ".ovpn")
 			if err != nil {
 				if os.IsNotExist(err) {
-					cmd := exec.Command("docker-entrypoint.sh", "genclient", name, serverAddr, serverPort, config, mfa)
+					cmd := exec.Command("docker-entrypoint.sh", "genclient", name, serverAddr, serverPort, config, ccdConfig, mfa)
 					if out, err := cmd.CombinedOutput(); err != nil {
 						if len(out) == 0 {
 							out = []byte(err.Error())

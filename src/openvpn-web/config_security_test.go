@@ -151,13 +151,22 @@ func TestClientGenerationPassesRuntimeArgumentsAndWritesValidatedCCD(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "genclient\ncert\nvpn.example\n1194\nroute 10.1.0.0 255.255.0.0\ntrue\n"
+	want := "genclient\ncert\nvpn.example\n1194\nroute 10.1.0.0 255.255.0.0\niroute 10.1.0.0 255.255.0.0\ntrue\n"
 	if string(args) != want {
 		t.Errorf("runtime arguments %q want %q", args, want)
 	}
 	ccd, err := os.ReadFile(filepath.Join(ovData, "ccd", "cert"))
 	if err != nil || string(ccd) != values.Get("ccdConfig") {
 		t.Errorf("CCD %q %v", ccd, err)
+	}
+	// Empty CCD must keep its positional slot even when MFA is omitted.
+	values = url.Values{"name": {"default-cert"}, "serverAddr": {"vpn.example"}, "serverPort": {"1194"}}
+	if w := b.request("POST", "/ovpn/client", values); w.Code != 200 {
+		t.Fatalf("default generation: %d %s", w.Code, w.Body)
+	}
+	args, err = os.ReadFile(capture)
+	if err != nil || string(args) != "genclient\ndefault-cert\nvpn.example\n1194\n\n\nfalse\n" {
+		t.Fatalf("default runtime arguments %q: %v", args, err)
 	}
 	os.Remove(capture)
 	values.Set("name", "bad")
