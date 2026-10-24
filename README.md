@@ -1,133 +1,155 @@
-# openvpn
+# OpenVPN Web — independent hardened fork
 
-![image-20240529110841439](https://raw.githubusercontent.com/GavinTan/files/master/picgo/image-20240529110841439.png)
+This independently maintained fork originates from **GavinTan/openvpn**, reviewed
+baseline `cb632205b01b66551342e609e4a6b1bbf771c55f`. It is not an official upstream
+release. The original MIT license and copyright remain in `LICENSE`. Upstream is
+reference-only: manually review and port individual changes, never auto-sync.
 
-![20220930173030](https://raw.githubusercontent.com/GavinTan/files/master/picgo/20220930173030.png)
+**Release status: UNRELEASED / BLOCKED pending final integration, container and
+security acceptance tests.** No image has been published by this work. Do not use
+`latest` or move `stable`; a known release-blocking high finding forbids release.
+See `SECURITY.md`, `CHANGELOG.md` and the final security review for actual results.
 
-![20220930173103](https://raw.githubusercontent.com/GavinTan/files/master/picgo/20220930173103.png)
+## Deployment model
 
-![image-20241015170847764](https://raw.githubusercontent.com/GavinTan/files/master/picgo/image-20241015170847764.png)
+Primary target: Debian 13, Docker Engine and Compose, an explicitly mapped TUN
+device and a private persistent `/data` volume. Administration binds to host
+`127.0.0.1:8833`; UDP `1194` is public. Use an SSH tunnel or a trusted HTTPS reverse
+proxy, and configure HTTPS/secure session settings before remote administration.
+Do not publish port 8833 to the internet. Do not use host networking or privileged
+mode. NET_ADMIN and root are required for TUN/nftables inside the container;
+this is not a sandbox for untrusted administrators. Host routing/firewall setup
+must be separately reviewed and explicitly authorized, not run by this project.
 
-**openvpn 安全与加密相关配置参考于[openvpn-install](https://github.com/angristan/openvpn-install?tab=readme-ov-file#security-and-encryption)的Security and Encryption部分。**
+The old bare-metal installer is **retired** and exits without installing anything.
+It previously fetched mutable upstream binaries and altered host configuration.
+Only build from this reviewed repository. Existing upstream images are not a
+supported migration mechanism.
 
-> 提示：
->
-> 1. 管理员登录账号密码默认`admin:admin`，登录后可在系统设置里修改。
-> 2. 系统同时支持使用vpn账号登录，vpn账号登录后可设置mfa、修改密码、下载配置文件。
-> 3. 第一步：web -> 管理 -> 客户端里生成下载客户端配置文件。
-> 4. 第二部：web -> 管理 -> VPN 账号里管理添加账号（默认启用账号验证可在 VPN 账号里开启或关闭）。
-> 5. 第三步：使用vpn账号登录 -> web -> 下载客户端 （设置mfa、修改密码）-> 下载配置文件 -> 导入客户端进行连接。
->
-> 
->
-> 注意：
->
-> 1. 默认场景应用于组网禁用vpn网关，如果需要客户端所有流量都走 openvpn 需要在系统设置openvpn里启用vpn网关。
-> 2. 系统设置里修改openvpn配置生效必须启用自动更新配置，如果要保留自己修改的server.conf配置则需要禁用自动更新配置。
-> 3. 系统设置openvpn配置只是修改了server.conf，应用需要手动重启openvpn服务。
-> 4. 设置mfa需要使用要设置的vpn账号登录用户页面后进行mfa设置，在用户页面下载配置文件会动态更新配置文件mfa参数，客户端页面的开启mfa选项是直接在配置文件添加mfa参数（直接在后台下载配置文件需要设置该选项，通过用户页面下载配置文件可忽略）。
-> 5. 在创建客户端后关闭账号验证客户端的配置文件存在auth-user-pass参数客户端会依旧弹出登录，登录信息可以随便输入不会做验证，若有弹窗困扰的建议手动编辑客户端配置文件注释掉参数或重新生成客户端配置文件。
-> 5. 默认生成的证书一年有效期，如果想要设置更长时间的有效期可以添加环境变量EASYRSA_CA_EXPIRE、EASYRSA_CERT_EXPIRE、EASYRSA_CRL_DAYS设置来覆盖默认设置，例：EASYRSA_CA_EXPIRE=3650。
+## Build from the exact checked-out source
 
-## 支持功能
+Run at the repository root, with a clean reviewed commit:
 
-- 账号管理
-- 证书管理
-- ipv6支持
-- ldap支持
-- mfa支持
-- 邮件通知
-- 连接历史记录
-- vpn账号固定ip
-- vpn账号分组路由推送
-- 在线编辑server.conf
-- 在线重启openvpn服务
-- 一键生成客户端 & CCD配置文件
-
-## Quick Start
-
-> 裸机部署：目前提供一个支持部分发行版的安装脚本`scripts/openvpn-install.sh`。
-
-运行 openvpn
-
-```shell
-docker run -d \
-  --cap-add=NET_ADMIN \
-  -p 1194:1194/udp \
-  -p 8833:8833 \
-  -v $(pwd)/data:/data \
-  yyxx/openvpn
+```sh
+git status --short
+git rev-parse HEAD
+REV=$(git rev-parse HEAD)
+docker build -f build/Dockerfile \
+  --build-arg VCS_REF="$REV" --build-arg VERSION=unreleased \
+  -t openvpn-local:v1.0.0-hardened .
+docker image inspect openvpn-local:v1.0.0-hardened --format '{{json .Config.Labels}}'
 ```
 
-### compose
+The Go compiler is explicitly `1.27.3` in an official digest-pinned builder;
+the runtime is official digest-pinned `debian:13-slim`. The application is compiled
+from `src/openvpn-web` with embedded templates/static assets. No upstream
+application executable/image is used. Signed Debian repositories supply OpenVPN,
+EasyRSA and utilities. Package versions are not snapshot-pinned: rebuilds receive
+security updates and are not bit-for-bit reproducible. Record package inventory
+and the resulting image digest for each approved immutable release.
 
-- 安装 docker-compose
+`docker-compose.yml` intentionally requires a username; the intended release
+reference is **`<DOCKERHUB_USERNAME>/openvpn:v1.0.0-hardened`**. Do not guess a
+namespace or assume this image exists. A local test override avoids any registry:
 
-  ```bash
-  yum install -y docker-compose-plugin
-  ```
-  
-- 创建 docker-compose.yml
-
-  ```yaml
-  services:
-    openvpn:
-      image: yyxx/openvpn
-      cap_add:
-        - NET_ADMIN
-      ports:
-        - "1194:1194/udp"
-        - "8833:8833"
-      volumes:
-        - ./data:/data
-        - /etc/localtime:/etc/localtime:ro
-  ```
-  
-- 运行 openvpn
-
-  ```bash
-  docker compose up -d
-  ```
-
-
-
-## IPV6
-
->注意：
->
->1. 需要在页面系统设置openvpn里启用ipv6
->2. 启用ipv6后客户端跟服务器的proto需要都指定udp6/tcp6
->3. docker的网络需要启用ipv6支持
->4. 使用openvpn-connect客户端的需要使用3.4.1以后的版本
-
-```bash
+```yaml
+# compose.local.yml — local validation only; do not publish it
 services:
   openvpn:
-    image: yyxx/openvpn
-    cap_add:
-      - NET_ADMIN
-    ports:
-      - "1194:1194/udp"
-      - "8833:8833"
-    volumes:
-      - ./data:/data
-      - /etc/localtime:/etc/localtime:ro
-    sysctls:
-      - net.ipv6.conf.default.disable_ipv6=0
-      - net.ipv6.conf.all.forwarding=1
-
-networks:
-  default:
-    enable_ipv6: true
+    image: openvpn-local:v1.0.0-hardened
+    pull_policy: never
 ```
+
+For config validation set `DOCKERHUB_USERNAME` to the literal local-only value
+`placeholder` (not a publishing destination), then use the override:
+
+```sh
+install -d -m 0700 data
+DOCKERHUB_USERNAME=placeholder docker compose -f docker-compose.yml -f compose.local.yml config
+# Only after reviewing host networking/TUN and completing security tests:
+DOCKERHUB_USERNAME=placeholder docker compose -f docker-compose.yml -f compose.local.yml up -d
+```
+
+No credentials belong in Compose, build arguments, image layers or Git. Bootstrap
+administrator access must use the hardened private-file/explicit initialization
+flow; never restore public default credentials, never print passwords in logs.
+Treat the generated bootstrap credential file (if enabled by the application) as
+a secret: retrieve privately, change the password, then securely remove the file.
 
 ## LDAP
 
-> 在系统设置里启用LDAP认证，启用LDAP认证后本地的VPN账号将不在工作。
+Configure LDAP URL, base/bind DN, user attributes and bind password through the
+protected settings interface. The CA controls below are independent runtime
+**environment** options (not fields sent by the browser):
 
-部分参数说明：
+* `ldaps://directory.example:636`: verifies chain and hostname, TLS 1.2 minimum.
+* `ldap://directory.example:389`: **mandatory StartTLS before any bind**; no
+  plaintext fallback. Servers without StartTLS must be upgraded or use LDAPS.
+* `LDAP_CA_FILE=/run/ldap-ca/ca.pem`: read-only mounted PEM trust bundle.
+* `LDAP_CA_DIR=/run/ldap-ca`: directory of PEM certificate files. Every file must
+  contain valid certificates; empty directories or unreadable files fail closed.
+  System roots remain trusted. Never mount private keys in this directory.
+* `LDAP_TLS_INSECURE_SKIP_VERIFY=false` is the default. Explicit `true` is an
+  emergency insecure override and produces a warning. It permits interception of
+  directory credentials; do not use it as a production fix.
 
-- LDAP_URL：ldap连接TLS 例：ldaps://example.org:636
-- LDAP_USER_ATTRIBUTE：根据当前使用的LDAP服务器设置，例：OpenLDAP：uid ； Windows AD: sAMAccountName
-- LDAP_USER_ATTR_IPADDR_NAME：可在ldap服务器添加ipaddr自定义字段，也可以设置为ldap已经存在其他的未使用字段 例：mobile、homePhone
-- LDAP_USER_ATTR_CONFIG_NAME：可在ldap服务器添加config自定义字段，也可以设置为ldap已经存在其他的未使用字段 例：mobile、homePhone
+VPN authentication policy snapshots are atomic mode-0600 files under
+`/data/connections`, keyed by SHA256(username + NUL + certificate common name).
+The OpenVPN hook reads the authenticated identity's policy and writes its own
+per-connection target atomically. No global `.ovip`/`.ovc` handoff is supported.
+Concurrent connections sharing the same identity/certificate intentionally share
+that identity's current policy; different identities never share a snapshot.
+Only allowlisted data-plane client directives are accepted. Arbitrary scripts,
+plugins, includes and filesystem directives are intentionally incompatible.
+
+## PKI and migration
+
+Stop the old service and make a complete private offline backup before migrating.
+Preserve `/data` including database, configuration, PKI, clients and CCD. Do not
+regenerate an existing CA. Partial PKI initialization fails closed and requires
+recovery; it must not silently replace an existing key. The entrypoint uses
+umask 077 and enforces PKI directories 0700 and files/private profiles 0600,
+including after actual EasyRSA issuance and renewal. Client names must be safe
+identifiers; remote endpoint and port must be explicitly supplied. Certificate
+issuance is serialized with `flock` because EasyRSA shares an index.
+
+Example backup/restore (operator-run, with the service stopped; keep archives
+outside the repository and encrypt them at rest):
+
+```sh
+umask 077
+tar -C . -cpf /secure/offline/openvpn-data.tar data
+# Restore to a clean, stopped deployment only; never over a running database.
+tar -C /new/deployment -xpf /secure/offline/openvpn-data.tar
+chmod 0700 /new/deployment/data
+```
+
+Review legacy custom server/client configuration before restart. Unsafe executable
+directives must be removed, not grandfathered. Upstream settings, TLS directories,
+old static-IP handoffs and default credentials may require explicit migration.
+IPv6 deployment needs separately reviewed Docker network and forwarding settings;
+IPv6 syntax checking is narrower than complete semantic validation.
+
+## Validation and publishing
+
+```sh
+python3 tests/runtime_shell_test.py
+# Use private disposable data; the application initializes state during Go tests.
+TEST_DATA=$(mktemp -d)
+trap 'rm -rf -- "$TEST_DATA"' EXIT INT TERM
+(cd src/openvpn-web && OVPN_DATA="$TEST_DATA" GOTOOLCHAIN=go1.27.3 go test ./...)
+(cd src/openvpn-web && GOTOOLCHAIN=go1.27.3 govulncheck ./...)
+```
+
+Use a private configured temporary base (`TMPDIR`) when running tests. Never run
+legacy installers as a regression test. Validate source review, authentication,
+MFA/session/CSRF/XSS regressions, certificate issuance/revocation, OpenVPN/TUN/UDP
+startup, persistence and image metadata before any release. A successful compile
+or no called Go vulnerabilities does not prove production readiness.
+
+Publishing CI is disabled: manual no-op workflow, no third-party Actions and no
+credential access. A user-provided namespace, explicit push approval and all
+release gates are required; Docker login alone is not push approval. Do not tag or
+push `latest`/`stable`. After approval record commit, immutable tag and registry
+digest together. Determine the current commit using `git rev-parse HEAD`; do not
+place a self-referential fabricated commit hash inside a commit.
