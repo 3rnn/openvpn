@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"math/big"
 	"net"
 	"net/http"
 	"os"
@@ -23,6 +24,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gavintan/gopkg/aes"
@@ -130,8 +132,12 @@ func (ov *ovpn) sendCommand(command string) (string, error) {
 
 	defer conn.Close()
 
-	conn.SetDeadline(time.Now().Add(time.Second * 3))
-	fmt.Fprintf(conn, "%s\n", command)
+	if err := conn.SetDeadline(time.Now().Add(time.Second * 3)); err != nil {
+		return "", err
+	}
+	if _, err := fmt.Fprintf(conn, "%s\n", command); err != nil {
+		return "", err
+	}
 
 	for {
 		buf := make([]byte, 1024)
@@ -142,8 +148,14 @@ func (ov *ovpn) sendCommand(command string) (string, error) {
 			sb.Write([]byte(str))
 		}
 
-		if err != nil || strings.HasSuffix(sb.String(), "\r\nEND\r\n") || strings.HasPrefix(sb.String(), "SUCCESS:") {
+		if strings.HasPrefix(sb.String(), "ERROR:") {
+			return "", fmt.Errorf("management command rejected")
+		}
+		if strings.HasSuffix(sb.String(), "\r\nEND\r\n") || (strings.HasPrefix(sb.String(), "SUCCESS:") && strings.HasSuffix(sb.String(), "\r\n")) {
 			break
+		}
+		if err != nil {
+			return "", err
 		}
 	}
 
@@ -252,8 +264,156 @@ func (ov *ovpn) getServer() ServerData {
 
 }
 
-func (ov *ovpn) killClient(cid string) {
-	ov.sendCommand(fmt.Sprintf("client-kill %s HALT", cid))
+func validClientID(cid string) bool {
+	if cid == "" {
+		return false
+	}
+	for _, c := range cid {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	_, err := strconv.ParseUint(cid, 10, 64)
+	return err == nil
+}
+func (ov *ovpn) killClient(cid string) error {
+	if !validClientID(cid) {
+		return fmt.Errorf("invalid client ID")
+	}
+	response, err := ov.sendCommand(fmt.Sprintf("client-kill %s HALT", cid))
+	if err != nil {
+		return err
+	}
+	if response == "" || strings.HasPrefix(response, "ERROR:") {
+		return fmt.Errorf("management rejected client kill")
+	}
+	return nil
+}
+
+var revocationMu sync.Mutex
+
+// A failed CRL publication may leave EasyRSA's index irreversibly revoked.
+// Retain the profile until the effective, signed CRL proves the revocation.
+func revokeClient(name string) error {
+	if !connectionIdentity.MatchString(name) {
+		return fmt.Errorf("invalid client name")
+	}
+	revocationMu.Lock()
+	defer revocationMu.Unlock()
+	pki := filepath.Join(ovData, "pki")
+	certPEM, err := os.ReadFile(filepath.Join(pki, "issued", name+".crt"))
+	if os.IsNotExist(err) {
+		profile, readErr := os.ReadFile(filepath.Join(ovData, "clients", name+".ovpn"))
+		if readErr != nil {
+			return readErr
+		}
+		_, block, found := strings.Cut(string(profile), "<cert>")
+		if !found {
+			return fmt.Errorf("client certificate unavailable")
+		}
+		block, _, found = strings.Cut(block, "</cert>")
+		if !found {
+			return fmt.Errorf("client certificate unavailable")
+		}
+		certPEM = []byte(block)
+	} else if err != nil {
+		return err
+	}
+	block, _ := pem.Decode(certPEM)
+	if block == nil {
+		return fmt.Errorf("invalid client certificate")
+	}
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return err
+	}
+	if cert.Subject.CommonName != name {
+		return fmt.Errorf("client certificate identity mismatch")
+	}
+	caPEM, err := os.ReadFile(filepath.Join(pki, "ca.crt"))
+	if err != nil {
+		return err
+	}
+	caBlock, _ := pem.Decode(caPEM)
+	if caBlock == nil {
+		return fmt.Errorf("invalid CA certificate")
+	}
+	ca, err := x509.ParseCertificate(caBlock.Bytes)
+	if err != nil {
+		return err
+	}
+	if err := cert.CheckSignatureFrom(ca); err != nil {
+		return err
+	}
+	index, err := os.ReadFile(filepath.Join(pki, "index.txt"))
+	if err != nil {
+		return err
+	}
+	revoked := false
+	for _, line := range strings.Split(string(index), "\n") {
+		fields := strings.Split(line, "\t")
+		if len(fields) < 6 || fields[0] != "R" {
+			continue
+		}
+		serial, ok := new(big.Int).SetString(fields[3], 16)
+		if ok && serial.Cmp(cert.SerialNumber) == 0 {
+			revoked = true
+			break
+		}
+	}
+	run := func(args ...string) error {
+		cmd := exec.Command("easyrsa", args...)
+		cmd.Env = append(os.Environ(), "EASYRSA_PKI="+pki)
+		if _, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("EasyRSA operation failed: %w", err)
+		}
+		return nil
+	}
+	if !revoked {
+		if err := run("--batch", "revoke", name); err != nil {
+			return err
+		}
+	}
+	if err := run("gen-crl"); err != nil {
+		return err
+	}
+	cfg, err := initOvpnConfig()
+	if err != nil {
+		return err
+	}
+	crlPath := cfg.Get("crl-verify")
+	// Only the runtime's file-based CRL is supported; directory CRLs need offline review.
+	if crlPath == "" || len(strings.Fields(crlPath)) != 1 {
+		return fmt.Errorf("effective CRL unavailable")
+	}
+	if !filepath.IsAbs(crlPath) {
+		crlPath = filepath.Join(ovData, crlPath)
+	}
+	crlPEM, err := os.ReadFile(crlPath)
+	if err != nil {
+		return err
+	}
+	crlBlock, _ := pem.Decode(crlPEM)
+	if crlBlock == nil {
+		return fmt.Errorf("invalid effective CRL")
+	}
+	crl, err := x509.ParseRevocationList(crlBlock.Bytes)
+	if err != nil {
+		return err
+	}
+	if err := crl.CheckSignatureFrom(ca); err != nil {
+		return err
+	}
+	now := time.Now()
+	if now.Before(crl.ThisUpdate) || !now.Before(crl.NextUpdate) {
+		return fmt.Errorf("effective CRL is not current")
+	}
+	for _, entry := range crl.RevokedCertificateEntries {
+		if entry.SerialNumber.Cmp(cert.SerialNumber) == 0 {
+			return nil
+		}
+	}
+	return fmt.Errorf("client certificate missing from effective CRL")
 }
 
 func parseCrl(crlPath string) (*CertData, error) {
@@ -667,6 +827,7 @@ func setupRouter(ov ovpn) *gin.Engine {
 					cfg, err := initOvpnConfig()
 					if err != nil {
 						logger.Error(context.Background(), err.Error())
+						securityError(c, 500, "OpenVPN configuration unavailable")
 						return
 					}
 
@@ -674,7 +835,10 @@ func setupRouter(ov ovpn) *gin.Engine {
 					if cfg.Get("status-version") != "3" || cfg.Get("status") != statusLogPath+" 1" {
 						cfg.Set("status", statusLogPath+" 1")
 						cfg.Set("status-version", "3")
-						cfg.Save()
+						if err := cfg.Save(); err != nil {
+							securityError(c, 500, "OpenVPN configuration persistence failed")
+							return
+						}
 
 						ov.sendCommand("signal SIGHUP")
 					}
@@ -701,7 +865,7 @@ func setupRouter(ov ovpn) *gin.Engine {
 				staged.Set(k, val)
 			}
 		}
-		if err := staged.WriteConfig(); err != nil {
+		if err := persistConfig(staged); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
@@ -710,7 +874,10 @@ func setupRouter(ov ovpn) *gin.Engine {
 			viper.Set(key, staged.Get(key))
 		}
 		loadConfig()
-		upadteOvpnConfig()
+		if err := updateOvpnConfigChecked(); err != nil {
+			securityError(c, 500, "OpenVPN configuration persistence failed")
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{"message": "更新成功"})
 	})
 
@@ -805,7 +972,14 @@ func setupRouter(ov ovpn) *gin.Engine {
 
 		ovpn.POST("/kill", func(c *gin.Context) {
 			cid := c.PostForm("cid")
-			ov.killClient(cid)
+			if !validClientID(cid) {
+				securityError(c, 400, "invalid client ID")
+				return
+			}
+			if err := ov.killClient(cid); err != nil {
+				securityError(c, 502, "client disconnect failed")
+				return
+			}
 			c.JSON(http.StatusOK, gin.H{"code": http.StatusOK})
 		})
 
@@ -1244,7 +1418,10 @@ func setupRouter(ov ovpn) *gin.Engine {
 			name := c.Param("name")
 			ccdDir := filepath.Join(ovData, "ccd")
 
-			os.MkdirAll(ccdDir, 0755)
+			if err := os.MkdirAll(ccdDir, 0700); err != nil {
+				securityError(c, 500, "CCD directory unavailable")
+				return
+			}
 
 			ccdRoot, err := os.OpenRoot(ccdDir)
 			if err != nil {
@@ -1302,7 +1479,10 @@ func setupRouter(ov ovpn) *gin.Engine {
 			msg := "客户端更新成功"
 			ccdDir := filepath.Join(ovData, "ccd")
 
-			os.MkdirAll(ccdDir, 0755)
+			if err := os.MkdirAll(ccdDir, 0700); err != nil {
+				securityError(c, 500, "CCD directory unavailable")
+				return
+			}
 
 			cfg, err := initOvpnConfig()
 			if err != nil {
@@ -1313,7 +1493,10 @@ func setupRouter(ov ovpn) *gin.Engine {
 
 			if cfg.Get("client-config-dir") == "" {
 				cfg.Set("client-config-dir", ccdDir)
-				cfg.Save()
+				if err := cfg.Save(); err != nil {
+					securityError(c, 500, "OpenVPN configuration persistence failed")
+					return
+				}
 
 				msg += "（未启用CCD需要重启服务生效）"
 			}
@@ -1326,7 +1509,7 @@ func setupRouter(ov ovpn) *gin.Engine {
 			}
 			defer ccdRoot.Close()
 
-			err = ccdRoot.WriteFile(name, []byte(content), 0644)
+			err = writeClientCCD(name, content)
 			if err != nil {
 				logger.Error(context.Background(), err.Error())
 				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -1435,20 +1618,13 @@ func setupRouter(ov ovpn) *gin.Engine {
 		ovpn.DELETE("/client/:name", func(c *gin.Context) {
 			name := c.Param("name")
 
-			cmd := exec.Command("easyrsa", "--batch", "revoke", name)
-			out, err := cmd.CombinedOutput()
-			if err == nil {
-				cmd = exec.Command("easyrsa", "gen-crl")
-				if out, err = cmd.CombinedOutput(); err != nil {
-					logger.Error(context.Background(), string(out))
-					c.JSON(http.StatusInternalServerError, gin.H{"message": "更新CRL证书失败"})
-				}
-			} else {
-				if len(out) == 0 {
-					out = []byte(err.Error())
-				}
-				logger.Error(context.Background(), string(out))
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "删除客户端失败"})
+			if !connectionIdentity.MatchString(name) {
+				securityError(c, 400, "invalid client name")
+				return
+			}
+			if err := revokeClient(name); err != nil {
+				logger.Error(context.Background(), err.Error())
+				securityError(c, 500, "client revocation or CRL publication failed")
 				return
 			}
 

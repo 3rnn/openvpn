@@ -66,6 +66,11 @@ func protectedVPNLines(content string, client bool) (map[string]int, error) {
 			continue
 		}
 		switch key {
+		case "static-challenge":
+			if !client || line != `static-challenge "Enter MFA code" 1` {
+				return nil, fmt.Errorf("unsupported static challenge")
+			}
+			continue
 		case "push":
 			if client {
 				return nil, fmt.Errorf("server-only directive")
@@ -183,6 +188,9 @@ func writeClientCCD(name, content string) error {
 		return err
 	}
 	defer root.Close()
+	if err := root.Chmod(".", 0700); err != nil {
+		return err
+	}
 	return atomicRootConfig(root, name, []byte(content))
 }
 

@@ -144,10 +144,32 @@ func (cfg *VPNConfig) DeleteLines(indexes []int) {
 	cfg.Lines = newLines
 }
 
-func (cfg *VPNConfig) Save() {
+func (cfg *VPNConfig) Save() error {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
-	os.WriteFile(cfg.ConfigPath, []byte(strings.Join(cfg.Lines, "\n")+"\n"), 0644)
+	return atomicPrivateConfig(cfg.ConfigPath, []byte(strings.Join(cfg.Lines, "\n")+"\n"))
+}
+
+// updateOvpnConfigChecked publishes the completed generated configuration once.
+// cfg.Update mutates only the request-local document; persistence is checked here.
+func updateOvpnConfigChecked() error {
+	if !viper.GetBool("system.base.auto_update_ovpn_config") {
+		return nil
+	}
+	cfg, err := initOvpnConfig()
+	if err != nil {
+		return err
+	}
+	for k, v := range viper.GetStringMap("openvpn") {
+		if k == "ovpn_push_dns1" || k == "ovpn_push_dns2" {
+			continue
+		}
+		cfg.Update("openvpn."+k, fmt.Sprintf("%v", v))
+	}
+	cfg.Set("setenv auth_api", fmt.Sprintf("http://127.0.0.1:%s/login", webPort))
+	cfg.Set("setenv ovpn_auth_api", fmt.Sprintf("http://127.0.0.1:%s/ovpn/login", webPort))
+	cfg.Set("setenv ovpn_history_api", fmt.Sprintf("http://127.0.0.1:%s/ovpn/history", webPort))
+	return cfg.Save()
 }
 
 func (cfg *VPNConfig) Update(key string, val string) {
@@ -335,5 +357,4 @@ func (cfg *VPNConfig) Update(key string, val string) {
 		}
 	}
 
-	cfg.Save()
 }
