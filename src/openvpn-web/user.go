@@ -301,12 +301,8 @@ func (u *User) Login(clogin bool) error {
 				}
 			}
 
-			if u.IpAddr != "" {
-				os.WriteFile(path.Join(ovData, ".ovip"), []byte(u.IpAddr), 0644)
-			}
-
 			var ovconfig sql.NullString
-			db.Raw(`
+			result := db.Raw(`
 				WITH RECURSIVE group_up AS (
 					SELECT
 						id,
@@ -331,8 +327,13 @@ func (u *User) Login(clogin bool) error {
 				WHERE config IS NOT NULL
 			`, u.Gid).Scan(&ovconfig)
 
-			if ovconfig.Valid {
-				os.WriteFile(path.Join(ovData, ".ovc"), []byte(ovconfig.String), 0644)
+			if result.Error != nil {
+				return errors.New("connection policy lookup failed")
+			}
+			// Always replace the snapshot, including an empty policy, so a
+			// prior connection's static address/options cannot survive removal.
+			if err := writeClientConnectionConfig(user, commonName, u.IpAddr, ovconfig.String); err != nil {
+				return err
 			}
 		}
 

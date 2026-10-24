@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -16,6 +17,13 @@ type Group struct {
 	Users     []User    `gorm:"foreignKey:Gid;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt time.Time `json:"createdAt" form:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt" form:"updatedAt"`
+}
+
+func (g *Group) BeforeSave(tx *gorm.DB) error {
+	if g.Config != nil {
+		return validateClientDirectives(strings.ReplaceAll(*g.Config, `\n`, "\n"))
+	}
+	return nil
 }
 
 func (g *Group) BeforeCreate(tx *gorm.DB) (err error) {

@@ -603,7 +603,15 @@ func setupRouter(ov ovpn) *gin.Engine {
 			securityError(c, 400, "invalid form")
 			return
 		}
-		for k := range c.Request.PostForm {
+		for k, values := range c.Request.PostForm {
+			if len(values) != 1 {
+				securityError(c, 400, "duplicate setting")
+				return
+			}
+			if err := validateVPNSetting(k, values[0]); err != nil {
+				securityError(c, 400, err.Error())
+				return
+			}
 			if k != "currentPass" && !allowedSetting(k) {
 				securityError(c, 400, "unknown or protected setting")
 				return
@@ -784,21 +792,10 @@ func setupRouter(ov ovpn) *gin.Engine {
 			case "updateConfig":
 				content := c.PostForm("content")
 
-				file, err := os.OpenFile(filepath.Join(ovData, "server.conf"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-				if err != nil {
-					logger.Error(context.Background(), err.Error())
-					c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				if err := updateServerConfig(content); err != nil {
+					securityError(c, 400, "configuration rejected: "+err.Error())
 					return
 				}
-				defer file.Close()
-
-				_, err = file.WriteString(content)
-				if err != nil {
-					logger.Error(context.Background(), err.Error())
-					c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-					return
-				}
-
 				c.JSON(http.StatusOK, gin.H{"message": "配置更新成功"})
 			default:
 				c.JSON(http.StatusUnprocessableEntity, gin.H{"message": "未知操作"})
@@ -863,7 +860,14 @@ func setupRouter(ov ovpn) *gin.Engine {
 
 		ovpn.POST("/group", func(c *gin.Context) {
 			var g Group
-			c.ShouldBind(&g)
+			if err := c.ShouldBind(&g); err != nil {
+				securityError(c, 400, "invalid group")
+				return
+			}
+			if err := g.BeforeSave(db); err != nil {
+				securityError(c, 400, err.Error())
+				return
+			}
 
 			err := g.Create()
 			if err != nil {
@@ -876,7 +880,14 @@ func setupRouter(ov ovpn) *gin.Engine {
 
 		ovpn.PATCH("/group", func(c *gin.Context) {
 			var g Group
-			c.ShouldBind(&g)
+			if err := c.ShouldBind(&g); err != nil {
+				securityError(c, 400, "invalid group")
+				return
+			}
+			if err := g.BeforeSave(db); err != nil {
+				securityError(c, 400, err.Error())
+				return
+			}
 
 			if config, ok := c.Request.PostForm["config"]; ok {
 				if config[0] == "" {
@@ -1280,6 +1291,14 @@ func setupRouter(ov ovpn) *gin.Engine {
 		ovpn.PUT("/client/:name/ccd", func(c *gin.Context) {
 			name := c.Param("name")
 			content := c.PostForm("content")
+			if !connectionIdentity.MatchString(name) {
+				securityError(c, 400, "invalid client name")
+				return
+			}
+			if err := validateClientDirectives(content); err != nil {
+				securityError(c, 400, err.Error())
+				return
+			}
 			msg := "客户端更新成功"
 			ccdDir := filepath.Join(ovData, "ccd")
 
@@ -1330,7 +1349,20 @@ func setupRouter(ov ovpn) *gin.Engine {
 			}
 			defer clientsRoot.Close()
 
-			err = clientsRoot.WriteFile(name+".ovpn", []byte(content), 0644)
+			if !connectionIdentity.MatchString(name) {
+				securityError(c, 400, "invalid client name")
+				return
+			}
+			original, err := clientsRoot.ReadFile(name + ".ovpn")
+			if err != nil {
+				securityError(c, 400, "client configuration unavailable")
+				return
+			}
+			if err = validateVPNConfigUpdate(string(original), content, true); err != nil {
+				securityError(c, 400, err.Error())
+				return
+			}
+			err = atomicRootConfig(clientsRoot, name+".ovpn", []byte(content))
 			if err != nil {
 				logger.Error(context.Background(), err.Error())
 				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -1345,7 +1377,19 @@ func setupRouter(ov ovpn) *gin.Engine {
 			serverPort := c.PostForm("serverPort")
 			config := c.PostForm("config")
 			ccdConfig := c.PostForm("ccdConfig")
-			mfa := c.PostForm("mfa")
+			mfa := c.DefaultPostForm("mfa", "false")
+			if !connectionIdentity.MatchString(name) || !validVPNPort(serverPort) || (mfa != "true" && mfa != "false") {
+				securityError(c, 400, "invalid client parameters")
+				return
+			}
+			if err := validateClientDirectives(config); err != nil {
+				securityError(c, 400, err.Error())
+				return
+			}
+			if err := validateClientDirectives(ccdConfig); err != nil {
+				securityError(c, 400, err.Error())
+				return
+			}
 
 			clientsDir := filepath.Join(ovData, "clients")
 
@@ -1362,7 +1406,7 @@ func setupRouter(ov ovpn) *gin.Engine {
 			_, err = clientsRoot.Stat(name + ".ovpn")
 			if err != nil {
 				if os.IsNotExist(err) {
-					cmd := exec.Command("docker-entrypoint.sh", "genclient", name, serverAddr, serverPort, config, ccdConfig, mfa)
+					cmd := exec.Command("docker-entrypoint.sh", "genclient", name, serverAddr, serverPort, config, mfa)
 					if out, err := cmd.CombinedOutput(); err != nil {
 						if len(out) == 0 {
 							out = []byte(err.Error())
@@ -1372,6 +1416,10 @@ func setupRouter(ov ovpn) *gin.Engine {
 						return
 					}
 
+					if err := writeClientCCD(name, ccdConfig); err != nil {
+						securityError(c, 500, "client generated but CCD persistence failed")
+						return
+					}
 					c.JSON(http.StatusOK, gin.H{"message": "客户端添加成功"})
 					return
 				}
