@@ -1,0 +1,16 @@
+.git
+.github
+**/.env
+**/.env.*
+!.env.example
+data
+**/data
+**/pki
+**/*.key
+**/*.pem
+**/*.db
+**/*.sqlite*
+**/bootstrap*.txt
+**/node_modules
+**/__pycache__
+compose.local.yml

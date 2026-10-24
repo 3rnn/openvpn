@@ -1,22 +1,18 @@
 #!/bin/bash
-
-token=$(jq -r '.system.base.token // ""' $ovpn_data/config.json)
-
-log_prefix="[OPENVPN-AUTH] $(date '+%Y-%m-%d %H:%M:%S.%3N')"
-
-if ! resp=$(curl -w "\n%{http_code}" --connect-timeout 5 -s -X POST "$ovpn_auth_api" --data-urlencode "username=$username" --data-urlencode "password=$password" --data-urlencode "common_name=$common_name" -H "O-Token: $token"); then
-	echo "$log_prefix [$username] 请求登录接口失败"
-	exit 1
+# OpenVPN environment values are data, never URLs or command fragments.
+set -euo pipefail
+umask 077
+data=${ovpn_data:-${OVPN_DATA:-/data}}
+web=$(jq -er '.system.base.web_port' "$data/config.json")
+[[ "$web" =~ ^[0-9]{1,5}$ ]] && ((10#$web>0 && 10#$web<=65535)) || exit 1
+token=$(jq -er '.system.base.token' "$data/config.json")
+[[ "$token" != *$'\r'* && "$token" != *$'\n'* ]] || exit 1
+if ! resp=$(curl --silent --show-error --connect-timeout 5 --max-time 15 --noproxy '*' \
+ -w '\n%{http_code}' -X POST "http://127.0.0.1:$web/ovpn/login" \
+ --data-urlencode "username=${username:-}" --data-urlencode "password=${password:-}" \
+ --data-urlencode "common_name=${common_name:-}" -H "O-Token: $token"); then
+ printf 'OpenVPN authentication service unavailable\n' >&2; exit 1
 fi
-
-body=$(echo "$resp" | head -n -1)
-http_code=$(echo "$resp" | tail -n 1)
-message=$(echo "$body" | jq -r '.message // "请求异常"')
-
-echo "$log_prefix [$username] $message"
-
-if [[ "$http_code" -ne 200 ]]; then
-	exit 1
-fi
-
-exit 0
+http_code=${resp##*$'\n'}
+# Do not echo server response, passwords, tokens, MFA codes or attacker log data.
+[[ "$http_code" == 200 ]] || { printf 'OpenVPN authentication rejected\n' >&2; exit 1; }

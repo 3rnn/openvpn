@@ -1,15 +1,19 @@
 services:
   openvpn:
-    image: yyxx/openvpn
+    # Replace the username only after the release is tested and approved.
+    image: ${DOCKERHUB_USERNAME:?set Docker Hub username}/openvpn:v1.0.0-hardened
     cap_add:
       - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "1194:1194/udp"
-      - "8833:8833"
-    environment:
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=admin
-      - OVPN_GATEWAY=false
+      - "127.0.0.1:8833:8833"
     volumes:
       - ./data:/data
-      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    # Forwarding is container-network-namespace scoped, never host sysctl.
+    sysctls:
+      net.ipv4.ip_forward: "1"
