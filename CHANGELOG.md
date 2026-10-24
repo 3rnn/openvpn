@@ -14,6 +14,10 @@ an impossible self-hash embedded in this commit.
   logout/rotation verifies deletion transactionally before clearing the old ID.
   Failed reads/writes do not mint replacement sessions or resurrect revoked rows.
   Fault-injection regressions cover logout, password-to-MFA and login completion.
+* Administrator bootstrap, password migration/change and configuration token
+  writes publish complete private JSON files atomically instead of truncating
+  the live configuration. Bootstrap installs live credentials only after complete
+  file publication succeeds; first-run publication refuses to overwrite existing files.
 
 * LDAP: verify TLS chain and hostname by default, minimum TLS 1.2; mandatory
   StartTLS on `ldap://` before credentials; explicit insecure override warning;

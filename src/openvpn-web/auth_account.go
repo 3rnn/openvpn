@@ -61,7 +61,7 @@ func registerAccountRoutes(r *gin.Engine) {
 			viper.Set("system.base.admin_session_version", secureToken())
 			viper.Set("system.base.admin_password", string(hash))
 			viper.Set("system.base.admin_first_login", false)
-			if err = viper.WriteConfig(); err != nil {
+			if err = persistConfig(viper.GetViper()); err != nil {
 				viper.Set("system.base.admin_password", old)
 				viper.Set("system.base.admin_first_login", oldFirst)
 				viper.Set("system.base.admin_session_version", oldVersion)

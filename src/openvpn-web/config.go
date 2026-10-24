@@ -174,7 +174,7 @@ func initConfig() {
 		panic(statErr)
 	}
 	if firstRun {
-		if err := viper.SafeWriteConfig(); err != nil {
+		if err := persistNewConfig(viper.GetViper(), filepath.Join(ovData, "config.json")); err != nil {
 			panic(err)
 		}
 	}
@@ -192,7 +192,7 @@ func initConfig() {
 	}
 	if !viper.IsSet("system.base.token") {
 		viper.Set("system.base.token", "ovpntoken"+genRandomString(16))
-		if err := viper.WriteConfig(); err != nil {
+		if err := persistConfig(viper.GetViper()); err != nil {
 			panic("cannot persist service authentication token")
 		}
 	}

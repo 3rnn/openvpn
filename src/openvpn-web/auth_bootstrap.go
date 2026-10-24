@@ -46,11 +46,20 @@ func initializeAdministrator(v *viper.Viper, dataDir string, firstRun bool) erro
 			return errors.New("cannot write private administrator bootstrap file")
 		}
 	}
-	v.Set("system.base.admin_password", string(hash))
-	v.Set("system.base.admin_first_login", true)
-	v.Set("system.base.admin_session_version", secureToken())
-	if err := v.WriteConfig(); err != nil {
+	staged := viper.New()
+	staged.SetConfigFile(v.ConfigFileUsed())
+	if err := staged.MergeConfigMap(v.AllSettings()); err != nil {
+		return errors.New("cannot stage administrator bootstrap configuration")
+	}
+	version := secureToken()
+	staged.Set("system.base.admin_password", string(hash))
+	staged.Set("system.base.admin_first_login", true)
+	staged.Set("system.base.admin_session_version", version)
+	if err := persistConfig(staged); err != nil {
 		return errors.New("cannot persist administrator bootstrap configuration")
 	}
+	v.Set("system.base.admin_password", string(hash))
+	v.Set("system.base.admin_first_login", true)
+	v.Set("system.base.admin_session_version", version)
 	return nil
 }

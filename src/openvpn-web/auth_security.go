@@ -144,7 +144,7 @@ func verifyAdminPassword(password string) bool {
 		return false
 	}
 	viper.Set("system.base.admin_password", string(b))
-	if err = viper.WriteConfig(); err != nil {
+	if err = persistConfig(viper.GetViper()); err != nil {
 		viper.Set("system.base.admin_password", hash)
 		return false
 	}
