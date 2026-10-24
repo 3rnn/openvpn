@@ -10,6 +10,11 @@ an impossible self-hash embedded in this commit.
 
 ### Security / runtime
 
+* Session persistence distinguishes absent rows from datastore read failures;
+  logout/rotation verifies deletion transactionally before clearing the old ID.
+  Failed reads/writes do not mint replacement sessions or resurrect revoked rows.
+  Fault-injection regressions cover logout, password-to-MFA and login completion.
+
 * LDAP: verify TLS chain and hostname by default, minimum TLS 1.2; mandatory
   StartTLS on `ldap://` before credentials; explicit insecure override warning;
   system roots plus `LDAP_CA_FILE`/`LDAP_CA_DIR`; fail closed on malformed CA/bool.
