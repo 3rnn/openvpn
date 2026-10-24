@@ -40,6 +40,9 @@ type FirewallSet struct {
 }
 
 func getNftQosChainRule(chain, ip string) ChainRuleData {
+	if validateNFTChain(chain) != nil || validateNFTAddresses(ip) != nil {
+		return ChainRuleData{}
+	}
 	cmd := exec.Command(
 		"nft",
 		"-a",
@@ -72,9 +75,20 @@ func getNftQosChainRule(chain, ip string) ChainRuleData {
 }
 
 func setNftQosChain(chain, ips, rate, unit string) error {
-	r, _ := strconv.Atoi(rate)
-	if r < 0 {
-		return nil
+	if err := validateNFTChain(chain); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(ips); err != nil {
+		return err
+	}
+	r, err := strconv.Atoi(rate)
+	if err != nil || r < 0 || r > 1000000000 {
+		return fmt.Errorf("invalid QoS rate")
+	}
+	switch unit {
+	case "bytes/second", "kbytes/second", "mbytes/second", "gbytes/second":
+	default:
+		return fmt.Errorf("invalid QoS unit")
 	}
 
 	addrField := "daddr"
@@ -115,6 +129,15 @@ func setNftQosChain(chain, ips, rate, unit string) error {
 }
 
 func setNftBlackList(ips, action string) error {
+	if action != "add" && action != "delete" {
+		return fmt.Errorf("invalid blacklist action")
+	}
+	if err := validateNFTNames("blacklist"); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(ips); err != nil {
+		return err
+	}
 	var sb strings.Builder
 	var v4, v6 []string
 
@@ -157,6 +180,9 @@ func setNftBlackList(ips, action string) error {
 }
 
 func getNftChainRule(chain, comment string) ChainRuleData {
+	if validateNFTChain(chain) != nil {
+		return ChainRuleData{}
+	}
 	cmd := exec.Command(
 		"nft",
 		"-a",
@@ -183,6 +209,18 @@ func getNftChainRule(chain, comment string) ChainRuleData {
 }
 
 func setNftChain(chain string, f Firewall) error {
+	if err := validateNFTChain(chain); err != nil {
+		return err
+	}
+	if err := validateNFTPolicy(f.Policy); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(f.SIP); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(f.DIP); err != nil {
+		return err
+	}
 	var sb strings.Builder
 	sSetName := fmt.Sprintf("f%d_src", f.ID)
 	dSetName := fmt.Sprintf("f%d_dst", f.ID)
@@ -244,6 +282,12 @@ func setNftChain(chain string, f Firewall) error {
 }
 
 func deleteNftChainRule(chain, fid string) error {
+	if err := validateNFTChain(chain); err != nil {
+		return err
+	}
+	if _, err := strconv.ParseUint(fid, 10, 64); err != nil {
+		return fmt.Errorf("invalid firewall id")
+	}
 	var sb strings.Builder
 	for _, suffix := range []string{"v4", "v6"} {
 		rule := getNftChainRule(chain, fmt.Sprintf("id_%s_%s", fid, suffix))
@@ -281,6 +325,12 @@ func deleteNftChainRule(chain, fid string) error {
 }
 
 func setNftTableSet(name, ips string) error {
+	if err := validateNFTNames(name); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(ips); err != nil {
+		return err
+	}
 	var v4, v6 []string
 	v4SetName := name + "_v4"
 	v6SetName := name + "_v6"
@@ -331,6 +381,9 @@ func setNftTableSet(name, ips string) error {
 }
 
 func deleteNftTableSet(name string) error {
+	if err := validateNFTNames(name); err != nil {
+		return err
+	}
 	if getNftTableSet(name) {
 		cmd := exec.Command("nft", "delete", "set", "inet", nftTableName, name)
 		if out, err := cmd.CombinedOutput(); err != nil {
@@ -346,10 +399,16 @@ func deleteNftTableSet(name string) error {
 }
 
 func getNftTableSet(name string) bool {
+	if validateNFTNames(name) != nil {
+		return false
+	}
 	return exec.Command("nft", "list", "set", "inet", nftTableName, name).Run() == nil
 }
 
 func getNftTableSetElement(name, ip string) (exist, isRange bool) {
+	if validateNFTNames(name) != nil || validateNFTAddresses(ip) != nil {
+		return false, false
+	}
 	setName := name + "_v4"
 	if strings.Contains(ip, ":") {
 		setName = name + "_v6"
@@ -378,6 +437,12 @@ func getNftTableSetElement(name, ip string) (exist, isRange bool) {
 }
 
 func addNftTableSetElement(name, ips string) error {
+	if err := validateNFTNames(name); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(ips); err != nil {
+		return err
+	}
 	var v4, v6 []string
 	var sb strings.Builder
 
@@ -427,6 +492,12 @@ func addNftTableSetElement(name, ips string) error {
 }
 
 func deleteNftTableSetElement(name, ips string) error {
+	if err := validateNFTNames(name); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(ips); err != nil {
+		return err
+	}
 	for ip := range strings.SplitSeq(ips, ",") {
 		ip = strings.TrimSpace(ip)
 		if ip == "" {
@@ -530,6 +601,9 @@ func setOnlineClinetNft(f Firewall) error {
 }
 
 func saveNftConfig() error {
+	if err := validateNFTNames("config"); err != nil {
+		return err
+	}
 	cmd := exec.Command("nft", "list", "table", "inet", nftTableName)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -593,11 +667,29 @@ func (f *Firewall) All() []Firewall {
 }
 
 func (f *Firewall) Create() error {
+	if err := validateNFTPolicy(f.Policy); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(f.SIP); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(f.DIP); err != nil {
+		return err
+	}
 	result := db.Omit("SGroup.*", "DGroup.*").Create(&f)
 	return result.Error
 }
 
 func (f *Firewall) Update() error {
+	if err := validateNFTPolicy(f.Policy); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(f.SIP); err != nil {
+		return err
+	}
+	if err := validateNFTAddresses(f.DIP); err != nil {
+		return err
+	}
 	result := db.Model(&f).Omit("SGroup.*", "DGroup.*").Updates(&f)
 	return result.Error
 }
