@@ -1,9 +1,26 @@
+const saveSettings = (data) => {
+  const currentPass = $('#settingsCurrentPass').val();
+  if (!currentPass) {
+    message.error('更改设置前请输入当前管理员密码');
+    return Promise.reject(new Error('需要当前管理员密码'));
+  }
+  return request.post('/settings', {...data, currentPass}).then((result) => {
+    if ('system.base.admin_username' in data || 'system.base.admin_password' in data) {
+      $('#settingsCurrentPass, #adminPassword').val('');
+      location.replace('/login');
+    }
+    return result;
+  });
+};
+$('#settingsModal').on('hidden.bs.modal', function () {
+  $('#settingsCurrentPass, #adminPassword, #ldapBindPassword, #emailSmtpPassword').val('');
+});
 $(document).on('click', '#settings', function () {
   request.get('/settings').then((data) => {
     $('#siteUrl').val(data.system.base.site_url);
     $('#webPort').val(data.system.base.web_port);
     $('#adminUsername').val(data.system.base.admin_username);
-    $('#adminPassword').val(data.system.base.admin_password);
+    $('#adminPassword').val('').attr('placeholder', '留空保留当前密码');
     $('#historyMaxDays').val(data.system.base.history_max_days);
     $('#autoUpdateOvpnConfig').prop('checked', data.system.base.auto_update_ovpn_config);
     $('#maxDuplicateLogin').val(data.system.base.max_duplicate_login);
@@ -12,7 +29,7 @@ $(document).on('click', '#settings', function () {
     $('#ldapAuth').prop('checked', data.system.ldap.ldap_auth);
     $('#ldapUrl').val(data.system.ldap.ldap_url);
     $('#ldapBindDn').val(data.system.ldap.ldap_bind_user_dn);
-    $('#ldapBindPassword').val(data.system.ldap.ldap_bind_password);
+    $('#ldapBindPassword').val('').attr('placeholder', '留空保留当前密码');
     $('#ldapBaseDn').val(data.system.ldap.ldap_base_dn);
     $('#ldapUserAttribute').val(data.system.ldap.ldap_user_attribute);
     $('#ldapUserAttrIpaddrName').val(data.system.ldap.ldap_user_attr_ipaddr_name);
@@ -25,7 +42,7 @@ $(document).on('click', '#settings', function () {
     $('#emailSmtpHost').val(data.system.email?.host);
     $('#emailSmtpPort').val(data.system.email?.port);
     $('#emailSmtpUsername').val(data.system.email?.username);
-    $('#emailSmtpPassword').val(data.system.email?.password);
+    $('#emailSmtpPassword').val('').attr('placeholder', '留空保留当前密码');
     $('#emailSecurityTls').prop('checked', data.system.email?.security === 'tls');
     $('#emailSecuritySsl').prop('checked', data.system.email?.security === 'ssl');
 
@@ -64,7 +81,7 @@ $(document).on('blur', '#siteUrl', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.base.site_url': newValue }).then((data) => {
+  saveSettings({ 'system.base.site_url': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -79,7 +96,7 @@ $(document).on('blur', '#webPort', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.base.web_port': newValue }).then((data) => {
+  saveSettings({ 'system.base.web_port': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -95,9 +112,8 @@ $(document).on('blur', '#adminUsername', function () {
   if (oldValue === newValue) return;
 
   if (confirm('修改用户名将会重新登录，确认吗？')) {
-    request.post('/settings', { 'system.base.admin_username': newValue }).then((data) => {
+    saveSettings({ 'system.base.admin_username': newValue }).then((data) => {
       message.success(data.message);
-      window.location.replace('/logout');
     });
   } else {
     $(this).val(oldValue);
@@ -163,7 +179,7 @@ $(document).on('blur', '#adminPassword', function () {
     return;
   }
 
-  request.post('/settings', { 'system.base.admin_password': newValue }).then((data) => {
+  saveSettings({ 'system.base.admin_password': newValue }).then((data) => {
     message.success(data.message);
     $('#settingsModal .progress-bar').width('0%');
   });
@@ -179,13 +195,13 @@ $(document).on('blur', '#historyMaxDays', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.base.history_max_days': newValue }).then((data) => {
+  saveSettings({ 'system.base.history_max_days': newValue }).then((data) => {
     message.success(data.message);
   });
 });
 
 $(document).on('change', '#autoUpdateOvpnConfig', function () {
-  request.post('/settings', { 'system.base.auto_update_ovpn_config': $(this).prop('checked') }).then((data) => {
+  saveSettings({ 'system.base.auto_update_ovpn_config': $(this).prop('checked') }).then((data) => {
     message.success(data.message);
   });
 });
@@ -205,20 +221,20 @@ $(document).on('blur', '#maxDuplicateLogin', function () {
     $(this).val(newValue);
   }
 
-  request.post('/settings', { 'system.base.max_duplicate_login': newValue }).then((data) => {
+  saveSettings({ 'system.base.max_duplicate_login': newValue }).then((data) => {
     message.success(data.message);
   });
 });
 
 $(document).on('change', '#validateClientConfig', function () {
-  request.post('/settings', { 'system.base.validate_client_config': $(this).prop('checked') }).then((data) => {
+  saveSettings({ 'system.base.validate_client_config': $(this).prop('checked') }).then((data) => {
     message.success(data.message);
   });
 });
 
 // ldap
 $(document).on('change', '#ldapAuth', function () {
-  request.post('/settings', { 'system.ldap.ldap_auth': $(this).prop('checked') }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_auth': $(this).prop('checked') }).then((data) => {
     message.success(data.message);
   });
 });
@@ -233,7 +249,7 @@ $(document).on('blur', '#ldapUrl', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.ldap.ldap_url': newValue }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_url': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -248,7 +264,7 @@ $(document).on('blur', '#ldapBindDn', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.ldap.ldap_bind_user_dn': newValue }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_bind_user_dn': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -263,7 +279,7 @@ $(document).on('blur', '#ldapBindPassword', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.ldap.ldap_bind_password': newValue }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_bind_password': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -278,7 +294,7 @@ $(document).on('blur', '#ldapBaseDn', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.ldap.ldap_base_dn': newValue }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_base_dn': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -293,7 +309,7 @@ $(document).on('blur', '#ldapUserAttribute', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.ldap.ldap_user_attribute': newValue }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_user_attribute': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -308,7 +324,7 @@ $(document).on('blur', '#ldapUserAttrIpaddrName', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.ldap.ldap_user_attr_ipaddr_name': newValue }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_user_attr_ipaddr_name': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -323,13 +339,13 @@ $(document).on('blur', '#ldapUserAttrConfigName', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.ldap.ldap_user_attr_config_name': newValue }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_user_attr_config_name': newValue }).then((data) => {
     message.success(data.message);
   });
 });
 
 $(document).on('change', '#ldapUserGroupFilter', function () {
-  request.post('/settings', { 'system.ldap.ldap_user_group_filter': $(this).prop('checked') }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_user_group_filter': $(this).prop('checked') }).then((data) => {
     message.success(data.message);
   });
 });
@@ -344,7 +360,7 @@ $(document).on('blur', '#ldapUserGroupDn', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.ldap.ldap_user_group_dn': newValue }).then((data) => {
+  saveSettings({ 'system.ldap.ldap_user_group_dn': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -362,7 +378,7 @@ $(document).on('blur', '#emailSendSubjectPrefix', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.email.send_subject_prefix': newValue }).then((data) => {
+  saveSettings({ 'system.email.send_subject_prefix': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -381,7 +397,7 @@ $(document).on('blur', '#emailSendFrom', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.email.send_from': newValue }).then((data) => {
+  saveSettings({ 'system.email.send_from': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -398,7 +414,7 @@ $(document).on('blur', '#emailSmtpHost', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.email.host': newValue }).then((data) => {
+  saveSettings({ 'system.email.host': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -415,7 +431,7 @@ $(document).on('blur', '#emailSmtpPort', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.email.port': newValue }).then((data) => {
+  saveSettings({ 'system.email.port': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -434,7 +450,7 @@ $(document).on('blur', '#emailSmtpUsername', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.email.username': newValue }).then((data) => {
+  saveSettings({ 'system.email.username': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -451,7 +467,7 @@ $(document).on('blur', '#emailSmtpPassword', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'system.email.password': newValue }).then((data) => {
+  saveSettings({ 'system.email.password': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -461,7 +477,7 @@ $(document).on('change', '#emailSecurityTls', function () {
     $('#emailSecuritySsl').prop('checked', false);
   }
 
-  request.post('/settings', { 'system.email.security': $(this).prop('checked') ? 'tls' : '' }).then((data) => {
+  saveSettings({ 'system.email.security': $(this).prop('checked') ? 'tls' : '' }).then((data) => {
     message.success(data.message);
   });
 });
@@ -471,7 +487,7 @@ $(document).on('change', '#emailSecuritySsl', function () {
     $('#emailSecurityTls').prop('checked', false);
   }
 
-  request.post('/settings', { 'system.email.security': $(this).prop('checked') ? 'ssl' : '' }).then((data) => {
+  saveSettings({ 'system.email.security': $(this).prop('checked') ? 'ssl' : '' }).then((data) => {
     message.success(data.message);
   });
 });
@@ -510,7 +526,7 @@ $(document).on('blur', '#windowsClientUrl', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'client.client_url.windows': newValue }).then((data) => {
+  saveSettings({ 'client.client_url.windows': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -525,7 +541,7 @@ $(document).on('blur', '#macosClientUrl', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'client.client_url.macos': newValue }).then((data) => {
+  saveSettings({ 'client.client_url.macos': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -540,7 +556,7 @@ $(document).on('blur', '#linuxClientUrl', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'client.client_url.linux': newValue }).then((data) => {
+  saveSettings({ 'client.client_url.linux': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -555,7 +571,7 @@ $(document).on('blur', '#androidClientUrl', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'client.client_url.android': newValue }).then((data) => {
+  saveSettings({ 'client.client_url.android': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -570,7 +586,7 @@ $(document).on('blur', '#iosClientUrl', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'client.client_url.ios': newValue }).then((data) => {
+  saveSettings({ 'client.client_url.ios': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -585,7 +601,7 @@ $(document).on('blur', '#androidMfaAppUrl', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'client.mfa_app_url.android': newValue }).then((data) => {
+  saveSettings({ 'client.mfa_app_url.android': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -600,7 +616,7 @@ $(document).on('blur', '#iosMfaAppUrl', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'client.mfa_app_url.ios': newValue }).then((data) => {
+  saveSettings({ 'client.mfa_app_url.ios': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -616,7 +632,7 @@ $(document).on('blur', '#ovpnPort', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'openvpn.ovpn_port': newValue }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_port': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -631,7 +647,7 @@ $(document).on('blur', '#ovpnProto', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'openvpn.ovpn_proto': newValue }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_proto': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -646,7 +662,7 @@ $(document).on('blur', '#ovpnMaxClients', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'openvpn.ovpn_max_clients': newValue }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_max_clients': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -661,13 +677,13 @@ $(document).on('blur', '#ovpnSubnet', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'openvpn.ovpn_subnet': newValue }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_subnet': newValue }).then((data) => {
     message.success(data.message);
   });
 });
 
 $(document).on('change', '#ovpnGateway', function () {
-  request.post('/settings', { 'openvpn.ovpn_gateway': $(this).prop('checked') }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_gateway': $(this).prop('checked') }).then((data) => {
     message.success(data.message);
   });
 });
@@ -682,13 +698,13 @@ $(document).on('blur', '#ovpnManagement', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'openvpn.ovpn_management': newValue }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_management': newValue }).then((data) => {
     message.success(data.message);
   });
 });
 
 $(document).on('change', '#ovpnIpv6', function () {
-  request.post('/settings', { 'openvpn.ovpn_ipv6': $(this).prop('checked') }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_ipv6': $(this).prop('checked') }).then((data) => {
     message.success(data.message);
   });
 });
@@ -703,7 +719,7 @@ $(document).on('blur', '#ovpnSubnet6', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'openvpn.ovpn_subnet6': newValue }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_subnet6': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -718,7 +734,7 @@ $(document).on('blur', '#ovpnPushDns1', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'openvpn.ovpn_push_dns1': newValue }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_push_dns1': newValue }).then((data) => {
     message.success(data.message);
   });
 });
@@ -733,7 +749,7 @@ $(document).on('blur', '#ovpnPushDns2', function () {
 
   if (oldValue === newValue) return;
 
-  request.post('/settings', { 'openvpn.ovpn_push_dns2': newValue }).then((data) => {
+  saveSettings({ 'openvpn.ovpn_push_dns2': newValue }).then((data) => {
     message.success(data.message);
   });
 });

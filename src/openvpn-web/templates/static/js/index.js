@@ -35,7 +35,7 @@ tables.status = {
       className: 'dt-center w-min-160',
       render: (data, type, row) =>
         `<button class="btn btn-link text-decoration-none p-0" id="showOnlineClientOffcanvas">
-      ${data == 'UNDEF' ? row.commonName : data}
+      ${escapeHTML(data == 'UNDEF' ? row.commonName : data)}
         </button>`,
     },
     {
@@ -43,9 +43,9 @@ tables.status = {
       data: 'vip',
       name: 'vip',
       className: 'dt-center w-max-250 text-truncate',
-      render: (data, type, row) => `${row.vip && row.vip6 ? `${row.vip}<br />${row.vip6}` : row.vip || row.vip6}`,
+      render: (data, type, row) => [row.vip, row.vip6].filter(Boolean).map(escapeHTML).join('<br />'),
     },
-    { title: '用户 IP', data: 'rip', name: 'rip', className: 'dt-center w-max-250 text-truncate' },
+    { title: '用户 IP', data: 'rip', name: 'rip', className: 'dt-center w-max-250 text-truncate', render: (data) => escapeHTML(data) },
     // {
     //   title: '上传流量',
     //   data: 'recvBytes',
@@ -84,8 +84,8 @@ tables.status = {
         return `${formatSize(data || 0)}/s`;
       },
     },
-    { title: '上线时间', data: 'connDate', name: 'connDate' },
-    { title: '时长', data: 'onlineTime', name: 'onlineTime' },
+    { title: '上线时间', data: 'connDate', name: 'connDate', render: (data) => escapeHTML(data) },
+    { title: '时长', data: 'onlineTime', name: 'onlineTime', render: (data) => escapeHTML(data) },
     {
       title: '操作',
       data: null,
@@ -138,11 +138,11 @@ tables.status = {
 
       $('#serverTable tbody').html(`
         <tr>
-          <td>${res?.server.Address}</td>
-          <td>${res?.server.Status}</td>
-          <td>${res?.server.BytesIn}</td>
-          <td>${res?.server.BytesOut}</td>
-          <td>${res?.server.RunDate}</td>
+          <td>${escapeHTML(res?.server.Address)}</td>
+          <td>${escapeHTML(res?.server.Status)}</td>
+          <td>${escapeHTML(res?.server.BytesIn)}</td>
+          <td>${escapeHTML(res?.server.BytesOut)}</td>
+          <td>${escapeHTML(res?.server.RunDate)}</td>
         </tr>
       `);
 
@@ -233,7 +233,7 @@ $('#vtable').on('shown.bs.popover', '.btn-delete', function () {
           break;
         case 'client':
           request
-            .delete(`/ovpn/client/${row.name}`)
+            .delete(`/ovpn/client/${encodeURIComponent(row.name)}`)
             .then((data) => {
               popoverInstance.hide();
               message.success(data.message);
@@ -355,7 +355,7 @@ $(document).on('click', '#killClient', function () {
 $(document).on('click', '#rateLimit', function () {
   const data = vtable.row($(this).parents('tr')).data();
   $('#rateLimitModal form').trigger('reset');
-  request.get(`/ovpn/firewall?a=get_rateLimit&vip=${data.vip || data.vip6}`).then((res) => {
+  request.get(`/ovpn/firewall?a=get_rateLimit&vip=${encodeURIComponent(data.vip || data.vip6)}`).then((res) => {
     if (res.upQos.rate) {
       $('#rateLimitModal input[name="upload"]').val(res.upQos.rate);
       $('#rateLimitModal select[name="uploadUnit"]').val(res.upQos.unit);
@@ -435,35 +435,35 @@ $(document).on('click', '#showOnlineClientOffcanvas', async function () {
   const data = vtable.row($(this).parents('tr')).data();
   const oc = new bootstrap.Offcanvas($('#onlineClientOffcanvas'));
 
-  const user = await request.get(`/ovpn/user?username=${data.username}`);
+  const user = await request.get(`/ovpn/user?username=${encodeURIComponent(data.username)}`);
 
   const html = `
     <div class="desc-item row">
       <div class="col-5 desc-label">ID</div>
-      <div class="col-7 desc-value">${data.id}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.id)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">用户名/客户端</div>
-      <div class="col-7 desc-value">${data.username}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.username)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">姓名</div>
-      <div class="col-7 desc-value">${user.name}</div>
+      <div class="col-7 desc-value">${escapeHTML(user.name)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">用户 IP</div>
-      <div class="col-7 desc-value">${data.rip}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.rip)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">VPN IP</div>
-      <div class="col-7 desc-value">${data.vip}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.vip)}</div>
     </div>
    ${
      data.vip6 &&
      `
        <div class="desc-item row">
          <div class="col-5 desc-label">VPN IPV6</div>
-         <div class="col-7 desc-value">${data.vip6}</div>
+         <div class="col-7 desc-value">${escapeHTML(data.vip6)}</div>
        </div>
      `
    }
@@ -477,11 +477,11 @@ $(document).on('click', '#showOnlineClientOffcanvas', async function () {
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">上线时间</div>
-      <div class="col-7 desc-value">${data.connDate}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.connDate)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">时长</div>
-      <div class="col-7 desc-value">${data.onlineTime}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.onlineTime)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">禁止网络</div>

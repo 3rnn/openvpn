@@ -271,11 +271,14 @@
       const password = $('#login input[name="password"]').val();
       const remember7d = $('#remember7d').is(':checked') ? 'on' : 'off';
 
-      $.post('/login', { username, password, remember7d, ...extra }, function (data) {
+      const payload = extra.passcode ? {passcode: extra.passcode} : { username, password, remember7d, ...extra };
+      request.post('/login', payload).then(function (data) {
         captchaEl.parentElement.hidden = true;
-        if (data.message === '需要MFA验证') {
+        if (data.mfaPending || data.message === '需要MFA验证') {
           $('#mfaValidateModal').modal('show');
         } else {
+          $('#mfaValidateModal').modal('hide');
+          $('#mfaValidateModal form').trigger('reset');
           redirect = data.redirect;
           if (data?.user?.isFirstLogin) {
             $('#modifyPassModal input[name="id"]').val(data.user.id);
@@ -287,7 +290,8 @@
             }, 500);
           }
         }
-      }).fail(function (xhr) {
+      }).catch(function (error) {
+        const xhr = {responseJSON: error.body, statusText: error.message};
         if (xhr.responseJSON?.message != '验证码错误') captchaEl.parentElement.hidden = true;
 
         needCaptcha = xhr.responseJSON?.needCaptcha || false;
@@ -397,13 +401,13 @@
         return false;
       }
 
-      request.post('/client/modifyPass', { id, currentPass, password: newPass, isFirstLogin: false }).then((data) => {
+      request.post('/client/modifyPass', { currentPass, password: newPass }).then((data) => {
         $('#modifyPassModal .progress-bar').width('0%');
         $('#modifyPassModal form').trigger('reset');
         $('#modifyPassModal').modal('hide');
         message.success(data.message);
         setTimeout(() => {
-          location.assign(redirect);
+          location.assign('/login');
         }, 500);
       });
 

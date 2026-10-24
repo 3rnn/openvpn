@@ -1,0 +1,68 @@
+package main
+
+// Copied into an isolated package by frontend-security-integration.cjs.
+// Real auth/session/account handlers and embedded templates; no API mocks.
+import (
+ "html/template"
+ "io/fs"
+ "net/http"
+ "net/http/httptest"
+ "os"
+ "path/filepath"
+ "testing"
+ "time"
+
+ "github.com/gin-contrib/sessions"
+ gormsessions "github.com/gin-contrib/sessions/gorm"
+ "github.com/gin-gonic/gin"
+ "github.com/glebarez/sqlite"
+ "github.com/spf13/viper"
+ "golang.org/x/crypto/bcrypt"
+ "gorm.io/gorm"
+ gLogger "gorm.io/gorm/logger"
+)
+
+func TestFrontendSecurityServer(t *testing.T) {
+ ready := os.Getenv("FRONTEND_SECURITY_READY")
+ if ready == "" {t.Skip("browser integration runner only")}
+ var err error
+ db, err = gorm.Open(sqlite.Open(filepath.Join(ovData,"browser.db")), &gorm.Config{Logger:gLogger.Default.LogMode(gLogger.Silent)})
+ if err != nil {t.Fatal(err)}
+ sqlDB, err := db.DB(); if err != nil {t.Fatal(err)}
+ defer sqlDB.Close()
+ if err = db.AutoMigrate(&User{}); err != nil {t.Fatal(err)}
+ first := false
+ user := User{Username:"browser-user",Name:`"><img src=x onerror="window.pwned=1">`,Password:"BrowserPassword!123",IsFirstLogin:&first}
+ if err = user.Create(); err != nil {t.Fatal(err)}
+ hash, err := bcrypt.GenerateFromPassword([]byte("BootstrapPassword!123"),12); if err != nil {t.Fatal(err)}
+ secretKey = "frontend-browser-integration-signing-key-test-only-123"
+ viper.SetConfigType("json")
+ viper.SetConfigFile(filepath.Join(ovData,"browser-config.json"))
+ viper.Set("system.base.admin_username","browser-admin")
+ viper.Set("system.base.admin_password",string(hash))
+ viper.Set("system.base.admin_first_login",true)
+ viper.Set("system.base.cookie_secure",false)
+ viper.Set("system.base.site_url","http://127.0.0.1")
+ viper.Set("system.base.auto_update_ovpn_config",false)
+ if err = viper.WriteConfig(); err != nil {t.Fatal(err)}
+ ldapAuth = false
+ gin.SetMode(gin.TestMode)
+ router := gin.New()
+ router.Use(sessions.Sessions("user_session",gormsessions.NewStore(db,true,[]byte(secretKey))))
+ router.Use(CSRFMiddleware())
+ router.SetHTMLTemplate(template.Must(template.New("").ParseFS(FS,"templates/*.html")))
+ static, err := fs.Sub(FS,"templates/static"); if err != nil {t.Fatal(err)}
+ router.StaticFS("/static",http.FS(static))
+ router.GET("/login",func(c *gin.Context){c.HTML(200,"login.html",gin.H{})})
+ registerAuthRoutes(router)
+ router.Use(AuthMiddleWare())
+ registerAccountRoutes(router)
+ router.GET("/",func(c *gin.Context){c.HTML(200,"client.html",gin.H{"ClientUrl":ClientUrlConfig{},"MfaAppUrl":MfaAppUrlConfig{}})})
+ router.GET("/admin",func(c *gin.Context){c.JSON(200,gin.H{"admin":true})})
+ server := httptest.NewServer(router)
+ defer server.Close()
+ if err = os.WriteFile(ready,[]byte(server.URL),0600); err != nil {t.Fatal(err)}
+ deadline := time.After(150*time.Second)
+ tick := time.NewTicker(100*time.Millisecond); defer tick.Stop()
+ for {select {case <-deadline:t.Fatal("browser runner timeout");case <-tick.C:if _,err:=os.Stat(ready+".stop");err==nil{return}}}
+}

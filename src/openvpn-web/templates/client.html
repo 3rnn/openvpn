@@ -206,7 +206,10 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body d-flex flex-column align-items-center">
-            <div id="mfaApp" class="text-center">
+            <label for="mfaCurrentPass">当前密码（启用/停用 MFA 需要重新验证）</label>
+            <input id="mfaCurrentPass" name="currentPass" type="password" autocomplete="current-password" class="form-control form-control-sm mb-3" required />
+            <button type="button" id="startMfaEnrollment" class="btn btn-primary btn-sm mb-3">开始设置新的 MFA</button>
+            <div id="mfaApp" class="text-center" style="display: none">
               <input type="text" name="id" hidden />
               <p>
                 下载验证器 App，例如：
@@ -244,8 +247,7 @@
             </div>
 
             <div id="mfaAlert" class="alert alert-success" style="display: none">
-              您的账号已启用此两步登录提供程序。 如果您要把它添加到其他设备，下面是您的验证器 App
-              所需要的二维码（或密钥）。
+              您的账号已启用 MFA。现有密钥不能再次查看；更换设备需要重置后重新设置。
             </div>
 
             <div class="mb-1">
@@ -373,11 +375,12 @@
         return false;
       }
 
-      request.post('/client/modifyPass', { id, currentPass, password: newPass }).then((data) => {
+      request.post('/client/modifyPass', { currentPass, password: newPass }).then((data) => {
         $('#modifyPassModal .progress-bar').width('0%');
         $('#modifyPassModal form').trigger('reset');
         $('#modifyPassModal').modal('hide');
         message.success(data.message);
+        location.assign('/login');
       });
 
       return false;
@@ -389,58 +392,72 @@
       });
     });
 
+    let mfaPending = false;
+    let mfaUsername = '';
+    function clearMfaEnrollment() {
+      mfaPending = false;
+      $('#mfaModal code[name="key"]').text('');
+      $('#mfaModal input[name="passcode"]').val('').hide();
+      $('#qrcode').hide();
+      const canvas = document.getElementById('qrcode');
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      $('#mfaApp, #enableMfa').hide();
+    }
+    $('#mfaModal').on('hide.bs.modal', function () {
+      clearMfaEnrollment();
+      $('#mfaModal input[name="currentPass"]').val('');
+    });
     $('#mfa').click(function () {
+      clearMfaEnrollment();
       request.get('/client/mfa').then((data) => {
+        mfaUsername = data.user?.username || '';
+        $('#mfaModal input[name="id"]').val(data.user?.id || '');
+        $('#mfaAlert').toggle(!!data.mfaEnable);
+        $('#startMfaEnrollment').toggle(!data.mfaEnable);
+        $('#disableMfa').remove();
         if (data.mfaEnable) {
-          $('#mfaApp').hide();
-          $('#mfaModal input[name="passcode"]').hide();
-          $('#mfaAlert').show();
-          $('#enableMfa').text('禁用');
-          $('#enableMfa').attr('id', 'disableMfa');
-        } else {
-          $('#mfaApp').show();
-          $('#mfaModal input[name="passcode"]').show();
-          $('#mfaAlert').hide();
-          $('#disableMfa').text('启用');
-          $('#disableMfa').attr('id', 'enableMfa');
+          $('<button>', {type:'button', id:'disableMfa', class:'btn btn-danger', text:'停用 MFA'})
+            .appendTo('#mfaModal .modal-footer');
         }
-
-        new QRious({
-          element: document.getElementById('qrcode'),
-          value:
-            'otpauth://totp/openvpn-web:' +
-            data.user.username +
-            '?algorithm=SHA1&digits=6&period=30&secret=' +
-            encodeURIComponent(data.user.mfaSecret) +
-            '&issuer=openvpn-web',
-          size: 200,
-        });
-
-        $('#mfaModal code[name="key"]').text(data.user.mfaSecret);
-        $('#mfaModal input[name="id"]').val(data.user.id);
-
         $('#mfaModal').modal('show');
       });
     });
-
+    $('#startMfaEnrollment').click(function () {
+      const currentPass = $('#mfaModal input[name="currentPass"]').val();
+      if (!currentPass) { message.error('请输入当前密码'); return; }
+      request.post('/client/mfa/enroll', {currentPass}).then((data) => {
+        // Never consume seeds from status/user APIs; only a new pending enrollment.
+        if (!data.mfaSecret) throw new Error('无法开始 MFA 设置');
+        mfaPending = true;
+        $('#mfaModal code[name="key"]').text(data.mfaSecret);
+        new QRious({element: document.getElementById('qrcode'), size:200,
+          value:'otpauth://totp/' + encodeURIComponent('openvpn-web:' + mfaUsername) +
+            '?algorithm=SHA1&digits=6&period=30&secret=' + encodeURIComponent(data.mfaSecret) + '&issuer=openvpn-web'});
+        $('#qrcode, #mfaApp, #enableMfa, #mfaModal input[name="passcode"]').show();
+        $('#startMfaEnrollment').hide();
+      }).catch(() => {});
+    });
     $(document).on('click', '#enableMfa', function () {
-      const id = $('#mfaModal input[name="id"]').val();
+      if (!mfaPending) return;
+      const currentPass = $('#mfaModal input[name="currentPass"]').val();
       const passcode = $('#mfaModal input[name="passcode"]').val();
-      const mfaSecret = $('#mfaModal code[name="key"]').text();
-
-      request.post('/client/mfa', { id, mfaSecret, passcode }).then((data) => {
+      request.post('/client/mfa', {currentPass, passcode}).then((data) => {
+        clearMfaEnrollment();
         $('#mfaModal').modal('hide');
         message.success(data.message);
-      });
+        location.assign('/login');
+      }).catch(() => {});
     });
-
     $(document).on('click', '#disableMfa', function () {
       const id = $('#mfaModal input[name="id"]').val();
-
-      request.delete(`/client/mfa/${id}`).then((data) => {
+      const currentPass = $('#mfaModal input[name="currentPass"]').val();
+      if (!currentPass) { message.error('请输入当前密码'); return; }
+      request.delete('/client/mfa/' + encodeURIComponent(id), {currentPass}).then((data) => {
+        clearMfaEnrollment();
         $('#mfaModal').modal('hide');
         message.success(data.message);
-      });
+        location.assign('/login');
+      }).catch(() => {});
     });
   </script>
 </html>

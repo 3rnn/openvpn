@@ -1,13 +1,13 @@
 tables.client = {
   columns: [
-    { title: '名称', data: 'name' },
-    { title: '日期', data: 'date' },
+    { title: '名称', data: 'name', render: (data) => escapeHTML(data) },
+    { title: '日期', data: 'date', render: (data) => escapeHTML(data) },
     {
       title: '操作',
       data: (data) => {
         const html = `
         <div class="d-grid gap-2 d-flex justify-content-center align-items-center">
-          <a href="${data.file}" download="${data.fullName}" class="text-decoration-none">下载</a>
+          <a href="${escapeHTML(safeDownloadURL(data.file))}" download="${escapeHTML(data.fullName)}" class="text-decoration-none">下载</a>
           <div class="dropdown">
             <button class="btn btn-link text-decoration-none p-0 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
               编辑
@@ -17,7 +17,7 @@ tables.client = {
               <li><button type="button" class="dropdown-item" id="editClient">客户端配置</button></li>
             </ul>
           </div>
-          <button class="btn btn-link text-decoration-none p-0 btn-delete" data-bs-toggle="popover" data-delete-type="client" data-delete-name="${data.name}">删除</button>
+          <button class="btn btn-link text-decoration-none p-0 btn-delete" data-bs-toggle="popover" data-delete-type="client" data-delete-name="${escapeHTML(data.name)}">删除</button>
         </div>
         `;
         return html;
@@ -54,7 +54,7 @@ tables.client = {
         const name = $(e).data('delete-name');
         return `
           <div>
-            <p>确定删除 <strong>${name}</strong> 吗？</p>
+            <p>确定删除 <strong>${escapeHTML(name)}</strong> 吗？</p>
             <div class="d-flex justify-content-center">
               <button class="btn btn-secondary btn-sm me-2 btn-popover-cancel">取消</button>
               <button class="btn btn-primary btn-sm btn-popover-confirm">确认</button>

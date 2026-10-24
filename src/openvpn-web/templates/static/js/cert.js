@@ -1,7 +1,7 @@
 tables.cert = {
   columns: [
-    { title: '名称', data: 'name' },
-    { title: '类型', data: 'type' },
+    { title: '名称', data: 'name', render: (data) => escapeHTML(data) },
+    { title: '类型', data: 'type', render: (data) => escapeHTML(data) },
     {
       title: '状态',
       data: (data) => {
@@ -11,12 +11,12 @@ tables.cert = {
         } else if (data.status === '即将过期') {
           badgeClass = 'text-bg-warning';
         }
-        return `<span class="badge ${badgeClass}">${data.status}</span>`;
+        return `<span class="badge ${badgeClass}">${escapeHTML(data.status)}</span>`;
       },
     },
-    { title: '颁发时间', data: 'notBefore' },
-    { title: '过期时间', data: 'notAfter' },
-    { title: '剩余天数', data: 'expiresIn' },
+    { title: '颁发时间', data: 'notBefore', render: (data) => escapeHTML(data) },
+    { title: '过期时间', data: 'notAfter', render: (data) => escapeHTML(data) },
+    { title: '剩余天数', data: 'expiresIn', render: (data) => escapeHTML(data) },
   ],
   order: [[3, 'desc']],
   buttons: {

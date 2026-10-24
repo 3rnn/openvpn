@@ -1083,6 +1083,7 @@
           <div class="modal-body" style="text-align: center">
             <input type="text" class="form-control form-control-sm" name="id" hidden />
             <h4>确认重置MFA?</h4>
+            <label>当前管理员密码<input type="password" name="currentPass" autocomplete="current-password" class="form-control form-control-sm" required /></label>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
@@ -1150,6 +1151,11 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body overflow-auto" style="height: 500px">
+            <div class="alert alert-warning">
+              <label for="settingsCurrentPass">更改设置需要当前管理员密码</label>
+              <input type="password" id="settingsCurrentPass" autocomplete="current-password" class="form-control form-control-sm" />
+              <small>已有密码不会显示；密码栏留空时不更改。修改管理员密码后需要重新登录。</small>
+            </div>
             <div class="tab-content" id="pills-tabContent">
               <div
                 class="tab-pane fade show active"
@@ -1362,6 +1368,10 @@
                       <label class="col-sm-3 col-form-label">LDAP地址</label>
                       <div class="col-sm-9">
                         <input type="text" class="form-control form-control-sm border-0 border-bottom" id="ldapUrl" />
+                        <div id="ldapTlsWarning" class="form-text text-warning">
+                          LDAP 使用 StartTLS，LDAPS 默认验证服务器证书。自签 CA 请通过 LDAP_CA_FILE / LDAP_CA_DIR 配置。
+                          LDAP_TLS_INSECURE_SKIP_VERIFY=true 会禁用证书验证并使密码面临中间人攻击；仅用于明确接受风险的临时诊断，不能作为常规配置。
+                        </div>
                       </div>
                     </div>
                     <div class="row mb-1">

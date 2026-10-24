@@ -22,12 +22,13 @@
         <span class="message-anticon">
           ${this.icon}
         </span>
-        <span>${content}</span>
+        <span class="message-text"></span>
       </div>
     </div>
     `;
 
       const $msgDiv = $(html).appendTo('#message');
+      $msgDiv.find('.message-text').text(content);
       $msgDiv.removeClass('move-up-leave').addClass('move-up-enter');
       setTimeout(() => {
         $msgDiv.removeClass('move-up-enter');
@@ -83,47 +84,66 @@
     }
   }
 
+  // Only for HTML text and quoted attribute contexts, never JS/CSS/URLs.
+  window.escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[char]);
+  window.safeDownloadURL = (value) => {
+    try {
+      const url = new URL(value, location.origin);
+      return url.origin === location.origin && /^https?:$/.test(url.protocol) ? url.href : '#';
+    } catch (_) { return '#'; }
+  };
+
   // Request 类 - 用于处理HTTP请求
   class Request {
-    async request(method, url, data = null) {
-      const options = {
-        method,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        },
-        redirect: 'manual',
-      };
-
-      if (data) {
-        options.body = new URLSearchParams(data);
+    async csrfToken(refresh = false) {
+      if (refresh) this.csrfPromise = null;
+      if (!this.csrfPromise) {
+        this.csrfPromise = fetch('/csrf', { credentials: 'same-origin', cache: 'no-store' })
+          .then(async (response) => {
+            const data = await response.json();
+            if (!response.ok || typeof data.csrfToken !== 'string' || !data.csrfToken) {
+              throw new Error('无法获取安全令牌，请刷新页面后重试');
+            }
+            return data.csrfToken;
+          }).catch((error) => { this.csrfPromise = null; throw error; });
       }
+      return this.csrfPromise;
+    }
 
+    async request(method, url, data = null) {
+      const target = new URL(url, location.origin);
+      if (target.origin !== location.origin) throw new Error('拒绝跨站请求');
+      const options = { method, headers: {}, credentials: 'same-origin', redirect: 'manual' };
       try {
-        const response = await fetch(url, options);
-
-        if (response.type == 'opaqueredirect') {
-          window.location.href = response.url;
-          return;
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+          options.headers['X-CSRF-Token'] = await this.csrfToken();
+          if (data instanceof FormData) {
+            options.body = data;
+          } else if (data) {
+            options.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+            options.body = new URLSearchParams(data);
+          }
         }
-
+        const response = await fetch(target.href, options);
+        if (response.type === 'opaqueredirect') {
+          location.assign('/login');
+          throw new Error('会话已过期，请重新登录');
+        }
         const body = await response.json();
         if (!response.ok) {
-          throw new Error(body?.message || response.text || response.statusText);
+          const error = new Error(body?.message || response.statusText);
+          error.body = body;
+          throw error;
         }
-
+        if (target.pathname === '/login' || target.pathname === '/logout') await this.csrfToken(true);
         return body;
       } catch (error) {
-        switch (true) {
-          case error.message.includes('UNIQUE constraint failed: user.ip_addr'):
-            message.error('IP已经使用');
-            break;
-          case error.message.includes('UNIQUE constraint failed: user.username'):
-            message.error('用户名已存在');
-            break;
-          default:
-            message.error(error.message);
-        }
-
+        // Never automatically replay mutations after a rejected token.
+        if (error.message.includes('UNIQUE constraint failed: user.ip_addr')) message.error('IP已经使用');
+        else if (error.message.includes('UNIQUE constraint failed: user.username')) message.error('用户名已存在');
+        else message.error(error.message);
         throw error;
       }
     }
@@ -140,8 +160,8 @@
       return this.request('POST', url, data);
     }
 
-    delete(url) {
-      return this.request('DELETE', url);
+    delete(url, data) {
+      return this.request('DELETE', url, data);
     }
 
     patch(url, data) {
@@ -154,4 +174,8 @@
 
   window.message = message;
   window.request = request;
+  $(document).on('click', 'a[href="/logout"]', function (event) {
+    event.preventDefault();
+    request.post('/logout').then(() => location.assign('/login')).catch(() => {});
+  });
 })();

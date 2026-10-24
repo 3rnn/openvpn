@@ -7,37 +7,18 @@ tables.user = {
       data: 'id',
       visible: false,
       searchable: false,
+      render: (data) => escapeHTML(data),
     },
     {
       title: '用户名',
       data: (data) =>
-        `<button class="btn btn-link text-decoration-none p-0" id="showUserOffcanvas">${data.username}</button>`,
+        `<button class="btn btn-link text-decoration-none p-0" id="showUserOffcanvas">${escapeHTML(data.username)}</button>`,
     },
-    {
-      title: '密码',
-      data: (data) => {
-        if (data.password.length == 0) {
-          return data.password;
-        }
-
-        const html = `
-        <div class="form-group d-flex justify-content-center align-items-center gap-1">
-          <span>${'•'.repeat(12)}</span>
-          <button class="btn btn-link p-0" id="copyPass">
-            <svg viewBox="64 64 896 896" focusable="false" data-icon="copy" width="1em" height="1em" fill="currentColor" aria-hidden="true">
-              <path d="M832 64H296c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h496v688c0 4.4 3.6 8 8 8h56c4.4 0 8-3.6 8-8V96c0-17.7-14.3-32-32-32zM704 192H192c-17.7 0-32 14.3-32 32v530.7c0 8.5 3.4 16.6 9.4 22.6l173.3 173.3c2.2 2.2 4.7 4 7.4 5.5v1.9h4.2c3.5 1.3 7.2 2 11 2H704c17.7 0 32-14.3 32-32V224c0-17.7-14.3-32-32-32zM350 856.2L263.9 770H350v86.2zM664 888H414V746c0-22.1-17.9-40-40-40H232V264h432v624z"></path>
-            </svg>
-          </button>
-        </div>
-        `;
-        return html;
-      },
-    },
-    { title: 'IP地址', data: 'ipAddr' },
-    { title: '配置文件', data: 'ovpnConfig' },
+    { title: 'IP地址', data: 'ipAddr', render: (data) => escapeHTML(data) },
+    { title: '配置文件', data: 'ovpnConfig', render: (data) => escapeHTML(data) },
     {
       title: 'MFA',
-      data: (data) => (data.mfaSecret ? '开启' : ''),
+      data: (data) => (data.mfaEnabled ? '开启' : ''),
     },
     {
       title: '状态',
@@ -55,7 +36,7 @@ tables.user = {
           : `<span class="badge text-bg-secondary">禁用</span>`;
       },
     },
-    { title: '姓名', data: 'name' },
+    { title: '姓名', data: 'name', render: (data) => escapeHTML(data) },
     {
       title: '操作',
       data: (data) => {
@@ -70,7 +51,7 @@ tables.user = {
           class="btn btn-link text-decoration-none p-0 btn-delete"
           data-bs-toggle="popover"
           data-delete-type="user"
-          data-delete-name="${data.username}"
+          data-delete-name="${escapeHTML(data.username)}"
         >
           删除
         </button>
@@ -117,7 +98,7 @@ tables.user = {
 
           request.get('/ovpn/client').then((data) => {
             $('#addUserModal select[name="ovpnConfig"]').html(
-              data.map((i) => `<option value="${i.fullName}">${i.name}</option>`)
+              data.map((i) => `<option value="${escapeHTML(i.fullName)}">${escapeHTML(i.name)}</option>`)
             );
 
             $('#addUserModal').modal('show');
@@ -154,7 +135,7 @@ tables.user = {
         const name = $(e).data('delete-name');
         return `
           <div>
-            <p>确认删除 <strong>${name}</strong> 吗？</p>
+            <p>确认删除 <strong>${escapeHTML(name)}</strong> 吗？</p>
             <div class="d-flex justify-content-center">
               <button class="btn btn-secondary btn-sm me-2 btn-popover-cancel">取消</button>
               <button class="btn btn-primary btn-sm btn-popover-confirm">确认</button>
@@ -184,27 +165,23 @@ $(document).on('click', '#showUserOffcanvas', async function () {
   const html = `
     <div class="desc-item row">
       <div class="col-5 desc-label">ID</div>
-      <div class="col-7 desc-value">${data.id}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.id)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">用户名</div>
-      <div class="col-7 desc-value">${data.username}</div>
-    </div>
-    <div class="desc-item row">
-      <div class="col-5 desc-label">密码</div>
-      <div class="col-7 desc-value">${data.password}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.username)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">IP地址</div>
-      <div class="col-7 desc-value">${data.ipAddr}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.ipAddr)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">配置文件</div>
-      <div class="col-7 desc-value">${data.ovpnConfig}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.ovpnConfig)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">MFA</div>
-      <div class="col-7 desc-value">${data.mfaSecret}</div>
+      <div class="col-7 desc-value">${data.mfaEnabled ? '开启' : '未开启'}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">状态</div>
@@ -212,15 +189,15 @@ $(document).on('click', '#showUserOffcanvas', async function () {
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">姓名</div>
-      <div class="col-7 desc-value">${data.name}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.name)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">邮箱</div>
-      <div class="col-7 desc-value">${data.email}</div>
+      <div class="col-7 desc-value">${escapeHTML(data.email)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">节点</div>
-      <div class="col-7 desc-value">${group?.name || ''}</div>
+      <div class="col-7 desc-value">${escapeHTML(group?.name)}</div>
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">过期时间</div>
@@ -320,18 +297,7 @@ importUserFileInput.addEventListener('change', (e) => {
 
 $('#importUserSubmit').click(function () {
   uploadFile.set('gid', cgid);
-  fetch('/ovpn/user', {
-    method: 'POST',
-    body: uploadFile,
-  })
-    .then(async (response) => {
-      const body = await response.json();
-      if (!response.ok) {
-        throw new Error(body?.message || response.text || response.statusText);
-      }
-
-      return body;
-    })
+  request.post('/ovpn/user', uploadFile)
     .then((data) => {
       $('#importUserModal').modal('hide');
       message.success(data.message);
@@ -436,10 +402,10 @@ $(document).on('click', '#editUser', function () {
     $('#editUserModal select[name="ovpnConfig"]').html(
       data.map((i) => {
         if (i.fullName === u.ovpnConfig) {
-          return `<option value="${i.fullName}" selected>${i.name}</option>`;
+          return `<option value="${escapeHTML(i.fullName)}" selected>${escapeHTML(i.name)}</option>`;
         }
 
-        return `<option value="${i.fullName}">${i.name}</option>`;
+        return `<option value="${escapeHTML(i.fullName)}">${escapeHTML(i.name)}</option>`;
       })
     );
   });
@@ -449,7 +415,9 @@ $(document).on('click', '#editUser', function () {
   request.get('/ovpn/group').then((data) => {
     $('#editUserModal ul[name="groupList"]').html(renderDropdownItems(buildTree(data)));
 
-    const item = $(`#editUserModal [data-id="${u.gid}"]`);
+    const item = $('#editUserModal [data-id]').filter(function () {
+      return this.getAttribute('data-id') === String(u.gid);
+    });
     item.addClass('selected');
     $('#editUserModal button[name="groupBtn"]').text(item.data('name'));
   });
@@ -521,26 +489,6 @@ $(document).on('change', '#authUser', function () {
     });
 });
 
-// 复制密码
-$(document).on('click', '#copyPass', function () {
-  const password = vtable.row($(this).parents('tr')).data().password;
-  copyToClipboard(password.trim());
-
-  const icon = $(this).html();
-  $(this).html(`
-    <svg width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
-    </svg>`);
-  $(this).addClass('text-success');
-  $(this).attr('disabled', true);
-
-  setTimeout(() => {
-    $(this).html(icon);
-    $(this).removeClass('text-success');
-    $(this).attr('disabled', false);
-  }, 1500);
-});
-
 // 禁用用户
 $(document).on('click', '#disableUser', function () {
   const id = vtable.row($(this).parents('tr')).data().id;
@@ -570,7 +518,10 @@ $(document).on('click', '#resetMfa', function () {
 
 $('#resetMfaInfoSumbit').click(function () {
   const id = $('#resetMfaInfoModal input[name="id"]').val();
-  request.delete(`/client/mfa/${id}`).then((data) => {
+  const currentPass = $('#resetMfaInfoModal input[name="currentPass"]').val();
+  if (!currentPass) { message.error('请输入当前管理员密码'); return; }
+  request.delete(`/client/mfa/${encodeURIComponent(id)}`, {currentPass}).then((data) => {
+    $('#resetMfaInfoModal input[name="currentPass"]').val('');
     $('#resetMfaInfoModal').modal('hide');
     message.success('MFA已重置');
     vtable.ajax.reload(null, false);
@@ -656,7 +607,7 @@ function renderTree(nodes, container) {
               <i class="fas ${toggleIcon}"></i>
           </span>
           <i class="fas ${hasChildren ? (isExpanded ? 'fa-folder-open' : 'fa-folder') : 'fa-folder'} text-warning"></i>
-          <span class="text-truncate">${node.name}</span>
+          <span class="text-truncate">${escapeHTML(node.name)}</span>
       `;
 
     li.appendChild(itemDiv);
@@ -721,17 +672,16 @@ function renderDropdownItems(treeData) {
   treeData.forEach((node) => {
     const indent = '&nbsp;&nbsp;&nbsp;&nbsp;'.repeat(node.depth);
     const symbol = node.depth > 0 ? '└─ ' : '';
-    const displayName = indent + symbol + node.name;
 
     html += `
     <li>
       <a class="dropdown-item group-select-item"
         href="#" 
-        data-id="${node.id}" 
-        data-name="${node.name}"
+        data-id="${escapeHTML(node.id)}"
+        data-name="${escapeHTML(node.name)}"
         onmouseenter="this.focus()"
       >
-        ${displayName}
+        ${indent + symbol + escapeHTML(node.name)}
       </a>
     </li>
       `;
@@ -830,7 +780,7 @@ menuEdit.addEventListener('click', () => {
 
 menuExport.addEventListener('click', () => {
   contextMenu.style.display = 'none';
-  window.location.href = `/ovpn/user/export?gid=${cgid}`;
+  window.location.href = `/ovpn/user/export?gid=${encodeURIComponent(cgid)}`;
 });
 
 menuVpnConfig.addEventListener('click', () => {

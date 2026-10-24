@@ -7,7 +7,7 @@ tables.firewall = {
   columns: [
     {
       title: 'ID',
-      data: 'id',
+      data: 'id', render: (data) => escapeHTML(data),
     },
     {
       title: '源地址',
@@ -20,7 +20,7 @@ tables.firewall = {
           html.push(...row.sg.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).map((g) => g.name));
         }
 
-        return html.join('<br />');
+        return html.map(escapeHTML).join('<br />');
       },
     },
     {
@@ -34,12 +34,12 @@ tables.firewall = {
           html.push(...row.dg.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).map((g) => g.name));
         }
 
-        return html.join('<br />');
+        return html.map(escapeHTML).join('<br />');
       },
     },
     {
       title: '策略',
-      data: 'policy',
+      data: 'policy', render: (data) => escapeHTML(data),
     },
     {
       title: '状态',
@@ -50,7 +50,7 @@ tables.firewall = {
           : '<span class="badge text-bg-danger">禁用</span>';
       },
     },
-    { title: '备注', data: 'comment', className: 'dt-center w-max-200 text-truncate' },
+    { title: '备注', data: 'comment', className: 'dt-center w-max-200 text-truncate', render: (data) => escapeHTML(data) },
     {
       title: '创建时间',
       data: 'createdAt',
@@ -71,7 +71,7 @@ tables.firewall = {
                 : '<button class="btn btn-link text-decoration-none p-0" type="button" id="enableFirewall">启用</button>'
             }
             <button class="btn btn-link text-decoration-none p-0 btn-delete" data-bs-toggle="popover" data-delete-type="firewall" data-delete-name="${
-              row.id
+              escapeHTML(row.id)
             }">删除</button>
           </div>
           `;
@@ -109,7 +109,7 @@ tables.firewall = {
         const name = $(e).data('delete-name');
         return `
             <div>
-              <p>确认删除 <strong>${name}</strong> 吗？</p>
+              <p>确认删除 <strong>${escapeHTML(name)}</strong> 吗？</p>
               <div class="d-flex justify-content-center">
                 <button class="btn btn-secondary btn-sm me-2 btn-popover-cancel">取消</button>
                 <button class="btn btn-primary btn-sm btn-popover-confirm">确认</button>
@@ -227,13 +227,13 @@ function makeNode(node) {
   <li>
     <div
       class="${cls.join(' ')}"
-      data-node-type="${node.type}"
-      data-node-id="${node.id}"
+      data-node-type="${escapeHTML(node.type)}"
+      data-node-id="${escapeHTML(node.id)}"
       data-phantom="${node.isPhantom ? '1' : '0'}"
     >
       <span class="tree-toggle ${toggleCls}">${toggleIcon}</span>
-      <i class="fas ${node.icon}"></i>
-      <span class="tree-name" title="${node.name}">${node.name}</span>
+      <i class="fas ${escapeHTML(node.icon)}"></i>
+      <span class="tree-name" title="${escapeHTML(node.name)}">${escapeHTML(node.name)}</span>
     </div>
   </li>
   `;
