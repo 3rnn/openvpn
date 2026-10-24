@@ -3,18 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
+	"os"
+	"path/filepath"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type SysBeseConfig struct {
+	CookieSecure         bool   `json:"cookie_secure" mapstructure:"cookie_secure"`
 	SiteUrl              string `json:"site_url" mapstructure:"site_url"`
 	WebPort              string `json:"web_port" mapstructure:"web_port"`
 	AdminUsername        string `json:"admin_username" mapstructure:"admin_username"`
-	AdminPassword        string `json:"admin_password" mapstructure:"admin_password"`
+	AdminPassword        string `json:"-" mapstructure:"admin_password"`
 	AutoUpdateOvpnConfig bool   `json:"auto_update_ovpn_config" mapstructure:"auto_update_ovpn_config"`
 	MaxDuplicateLogin    int    `json:"max_duplicate_login" mapstructure:"max_duplicate_login"`
 	HistoryMaxDays       int    `json:"history_max_days" mapstructure:"history_max_days"`
@@ -31,7 +31,7 @@ type SysLdapConfig struct {
 	LdapUserAttrIpaddrName string `json:"ldap_user_attr_ipaddr_name" mapstructure:"ldap_user_attr_ipaddr_name"`
 	LdapUserAttrConfigName string `json:"ldap_user_attr_config_name" mapstructure:"ldap_user_attr_config_name"`
 	LdapBindUserDn         string `json:"ldap_bind_user_dn" mapstructure:"ldap_bind_user_dn"`
-	LdapBindPassword       string `json:"ldap_bind_password" mapstructure:"ldap_bind_password"`
+	LdapBindPassword       string `json:"-" mapstructure:"ldap_bind_password"`
 }
 
 type SysEmailConfig struct {
@@ -40,7 +40,7 @@ type SysEmailConfig struct {
 	Host              string  `json:"host" mapstructure:"host"`
 	Port              int     `json:"port" mapstructure:"port"`
 	Username          string  `json:"username" mapstructure:"username"`
-	Password          string  `json:"password" mapstructure:"password"`
+	Password          string  `json:"-" mapstructure:"password"`
 	Security          *string `json:"security" mapstructure:"security"`
 }
 
@@ -105,7 +105,6 @@ var (
 
 func initConfig() {
 	sk := genRandomString(50)
-	passwd, _ := bcrypt.GenerateFromPassword([]byte("admin"), 12)
 
 	viper.SetDefault("system.base.site_url", "http://127.0.0.1:8833")
 	viper.SetDefault("system.base.web_port", "8833")
@@ -113,7 +112,8 @@ func initConfig() {
 	viper.SetDefault("system.base.server_cn", "ovpn_"+genRandomString(16))
 	viper.SetDefault("system.base.server_name", "server_"+genRandomString(16))
 	viper.SetDefault("system.base.admin_username", "admin")
-	viper.SetDefault("system.base.admin_password", string(passwd))
+	viper.SetDefault("system.base.admin_first_login", true)
+	viper.SetDefault("system.base.cookie_secure", false)
 	viper.SetDefault("system.base.auto_update_ovpn_config", false)
 	viper.SetDefault("system.base.max_duplicate_login", 0)
 	viper.SetDefault("system.base.validate_client_config", false)
@@ -128,7 +128,7 @@ func initConfig() {
 	viper.SetDefault("system.ldap.ldap_user_attr_ipaddr_name", "ipaddr")
 	viper.SetDefault("system.ldap.ldap_user_attr_config_name", "config")
 	viper.SetDefault("system.ldap.ldap_bind_user_dn", "cn=admin,dc=example,dc=org")
-	viper.SetDefault("system.ldap.ldap_bind_password", "adminpassword")
+	viper.SetDefault("system.ldap.ldap_bind_password", "")
 	viper.SetDefault("system.email.send_subject_prefix", "【openvpn-web】")
 	viper.SetDefault("system.email.send_from", "")
 	viper.SetDefault("system.email.host", "")
@@ -162,31 +162,42 @@ func initConfig() {
 	viper.SetConfigPermissions(0600)
 	viper.AddConfigPath(ovData)
 
-	viper.SafeWriteConfig()
+	if ovData == "" {
+		panic("OVPN_DATA must specify a persistent data directory")
+	}
+	if err := os.MkdirAll(ovData, 0700); err != nil {
+		panic(err)
+	}
+	_, statErr := os.Stat(filepath.Join(ovData, "config.json"))
+	firstRun := os.IsNotExist(statErr)
+	if statErr != nil && !firstRun {
+		panic(statErr)
+	}
+	if firstRun {
+		if err := viper.SafeWriteConfig(); err != nil {
+			panic(err)
+		}
+	}
 
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}
 
+	if err := initializeAdministrator(viper.GetViper(), ovData, firstRun); err != nil {
+		panic(err)
+	}
+	if err := os.Chmod(viper.ConfigFileUsed(), 0600); err != nil {
+		panic(err)
+	}
 	if !viper.IsSet("system.base.token") {
 		viper.Set("system.base.token", "ovpntoken"+genRandomString(16))
-		viper.WriteConfig()
+		if err := viper.WriteConfig(); err != nil {
+			panic("cannot persist service authentication token")
+		}
 	}
 
-	var lastEventTime time.Time
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		now := time.Now()
-		if now.Sub(lastEventTime) < 500*time.Millisecond {
-			return
-		}
-		lastEventTime = now
-
-		loadConfig()
-		upadteOvpnConfig()
-	})
-
-	viper.WatchConfig()
+	// External configuration edits take effect after an explicit restart.
 }
 
 func upadteOvpnConfig() {

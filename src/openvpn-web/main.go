@@ -3,9 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/subtle"
+	"crypto/rand"
 	"crypto/x509"
 	"embed"
+	"encoding/base64"
 	"encoding/csv"
 	"encoding/pem"
 	"fmt"
@@ -13,7 +14,6 @@ import (
 	"io"
 	"io/fs"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -28,7 +28,6 @@ import (
 	"github.com/gavintan/gopkg/aes"
 	"github.com/gavintan/gopkg/tools"
 	"github.com/gin-contrib/sessions"
-	gormsessions "github.com/gin-contrib/sessions/gorm"
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/patrickmn/go-cache"
@@ -112,6 +111,7 @@ var (
 			LogLevel:                  gLogger.Error,
 			IgnoreRecordNotFoundError: true,
 			Colorful:                  true,
+			ParameterizedQueries:      true,
 		},
 	)
 	ovData = os.Getenv("OVPN_DATA")
@@ -419,12 +419,14 @@ func isValidPassword(pw string) bool {
 }
 
 func genRandomString(length int) string {
-	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-	result := make([]byte, length)
-	for i := range result {
-		result[i] = charset[rand.Intn(len(charset))]
+	if length < 1 {
+		return ""
 	}
-	return string(result)
+	result := make([]byte, length)
+	if _, err := rand.Read(result); err != nil {
+		panic("secure random unavailable")
+	}
+	return base64.RawURLEncoding.EncodeToString(result)[:length]
 }
 
 func IsLocalRequest(c *gin.Context) bool {
@@ -441,39 +443,12 @@ func IsLocalRequest(c *gin.Context) bool {
 	return parsedIP.IsLoopback()
 }
 
-func AuthMiddleWare() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		session := sessions.Default(c)
-		user := session.Get("user")
-
-		if c.GetHeader("O-Token") == viper.GetString("system.base.token") {
-			if c.Request.URL.Path == "/ovpn/login" || c.Request.URL.Path == "/ovpn/history" || c.Request.URL.Path == "/ovpn/firewall" {
-				if IsLocalRequest(c) {
-					c.Next()
-					return
-				}
-			}
-		}
-
-		if user == nil {
-			c.Redirect(302, "/login")
-			c.Abort()
-			return
-		}
-
-		if user, ok := user.(string); ok {
-			if c.Request.URL.Path != "/" && !strings.HasPrefix(c.Request.URL.Path, "/client") && user != adminUsername {
-				c.Redirect(302, "/")
-				c.Abort()
-				return
-			}
-		}
-
-		c.Next()
-	}
-}
+func AuthMiddleWare() gin.HandlerFunc { return authMiddleware() }
 
 func init() {
+	if strings.HasSuffix(os.Args[0], ".test") {
+		return
+	}
 	initConfig()
 	loadConfig()
 }
@@ -494,6 +469,9 @@ func main() {
 
 	c := cron.New()
 	c.AddFunc("@daily", func() {
+		configRequestMu.RLock()
+		defer configRequestMu.RUnlock()
+		db.Exec("DELETE FROM sessions WHERE expires_at <= ?", time.Now())
 		err := History{}.Clear()
 		if err != nil {
 			logger.Error(context.Background(), err.Error())
@@ -501,13 +479,28 @@ func main() {
 	})
 	c.Start()
 
-	store := gormsessions.NewStore(db, true, []byte(secretKey))
+	if err := db.AutoMigrate(&Group{}); err != nil {
+		panic("group schema migration failed")
+	}
+	if err := db.FirstOrCreate(&Group{Name: "Default", ParentID: nil}).Error; err != nil {
+		panic("default group initialization failed")
+	}
+	if err := db.AutoMigrate(&User{}, &History{}, &Firewall{}); err != nil {
+		panic("security schema migration failed")
+	}
 
-	db.AutoMigrate(&Group{})
-	db.FirstOrCreate(&Group{Name: "Default", ParentID: nil})
-	db.AutoMigrate(&User{}, &History{}, &Firewall{})
+	r := setupRouter(ov)
+	if err := r.Run(fmt.Sprintf(":%s", webPort)); err != nil {
+		panic(err)
+	}
+}
 
+func setupRouter(ov ovpn) *gin.Engine {
+	store := newSessionStore(db)
 	r := gin.New()
+	r.SetTrustedProxies(nil)
+	r.Use(gin.Recovery())
+	r.Use(configRequestGuard())
 	r.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 
 		var statusColor, methodColor, resetColor string
@@ -531,7 +524,9 @@ func main() {
 		)
 	}))
 
+	store.Options(cookieOptions(7 * 24 * 3600))
 	r.Use(sessions.Sessions("user_session", store))
+	r.Use(CSRFMiddleware())
 
 	// r.Use(gin.Recovery())
 
@@ -544,119 +539,7 @@ func main() {
 		c.HTML(http.StatusOK, "login.html", gin.H{})
 	})
 
-	r.POST("/login", func(c *gin.Context) {
-		var err error
-
-		cip := c.ClientIP()
-		key := c.PostForm("c_key")
-		dots := c.PostForm("c_dots")
-		passcode := c.PostForm("passcode")
-
-		n := getLoginFail(cip)
-		if passcode == "" && n >= loginCaptchaThreshold {
-			if key == "" && dots == "" {
-				c.JSON(401, gin.H{"message": "需要进行人机验证", "needCaptcha": true})
-				return
-			}
-
-			if !checkCaptcha(key, dots) {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "验证码错误"})
-				return
-			}
-		}
-
-		session := sessions.Default(c)
-		remember7d := c.PostForm("remember7d")
-
-		if remember7d == "on" {
-			session.Options(sessions.Options{
-				HttpOnly: true,
-				MaxAge:   3600 * 24 * 7,
-			})
-		} else {
-			session.Options(sessions.Options{
-				HttpOnly: true,
-				MaxAge:   3600 * 1,
-			})
-		}
-
-		var u User
-		c.ShouldBind(&u)
-
-		if u.Username == adminUsername {
-			if dp, err := aes.AesDecrypt(adminPassword, secretKey); err == nil {
-				if subtle.ConstantTimeCompare([]byte(dp), []byte(u.Password)) == 1 {
-					passwd, _ := bcrypt.GenerateFromPassword([]byte("admin"), 12)
-					viper.Set("system.base.admin_password", string(passwd))
-					viper.WriteConfig()
-
-					c.JSON(401, gin.H{"message": "检测到旧的密码加密格式已重置为默认密码，请使用默认密码admin登录后进行修改"})
-					return
-				}
-			}
-
-			if bcrypt.CompareHashAndPassword([]byte(adminPassword), []byte(u.Password)) == nil {
-				session.Set("user", u.Username)
-				session.Save()
-
-				resetLoginFail(cip)
-				c.JSON(200, gin.H{"message": "登录成功", "redirect": "/admin"})
-				return
-			} else {
-				err = fmt.Errorf("密码错误")
-			}
-		} else {
-			if passcode != "" {
-				if validUser, ok := cc.Get("valid_user"); ok {
-					if u.Username == validUser.(string) {
-						if ValidateMfa(passcode, u.Info().MfaSecret) {
-							cc.Delete("valid_user")
-							session.Set("user", u.Username)
-							session.Save()
-							resetLoginFail(cip)
-							c.JSON(200, gin.H{"message": "登录成功", "redirect": "/"})
-						} else {
-							c.JSON(401, gin.H{"message": "MFA验证失败"})
-						}
-
-						return
-					}
-				}
-
-				c.JSON(401, gin.H{"message": "登录超时", "redirect": "/login"})
-				return
-			}
-
-			if err = u.Login(false); err == nil {
-				user := u.Info()
-				if user.MfaSecret != "" {
-					cc.Set("valid_user", u.Username, 1*time.Minute)
-					c.JSON(200, gin.H{"message": "需要MFA验证"})
-					return
-				}
-
-				session.Set("user", u.Username)
-				session.Save()
-
-				resetLoginFail(cip)
-
-				c.JSON(200, gin.H{"message": "登录成功", "redirect": "/", "user": gin.H{"id": user.ID, "isFirstLogin": *user.IsFirstLogin}})
-				return
-			}
-		}
-
-		setLoginFail(cip)
-
-		c.JSON(401, gin.H{"message": err.Error()})
-	})
-
-	r.GET("/logout", func(c *gin.Context) {
-		session := sessions.Default(c)
-		session.Clear()
-		session.Options(sessions.Options{MaxAge: -1})
-		session.Save()
-		c.Redirect(302, "/login")
-	})
+	registerAuthRoutes(r)
 
 	r.GET("/captcha", func(c *gin.Context) {
 		key, mBase64, tBase64, err := getCaptcha()
@@ -668,6 +551,7 @@ func main() {
 	})
 
 	r.Use(AuthMiddleWare())
+	registerAccountRoutes(r)
 
 	r.GET("/", func(c *gin.Context) {
 		session := sessions.Default(c)
@@ -678,7 +562,7 @@ func main() {
 			}
 
 			u := User{Username: user}.Info()
-			if *u.IsFirstLogin {
+			if u.IsFirstLogin != nil && *u.IsFirstLogin {
 				c.Redirect(302, "/login")
 				return
 			}
@@ -711,13 +595,57 @@ func main() {
 	})
 
 	r.POST("/settings", func(c *gin.Context) {
-		c.Request.ParseForm()
+		u, ok := ownAccount(c)
+		if !ok || !requireCurrentPassword(c, &u) {
+			return
+		}
+		if err := c.Request.ParseForm(); err != nil {
+			securityError(c, 400, "invalid form")
+			return
+		}
+		for k := range c.Request.PostForm {
+			if k != "currentPass" && !allowedSetting(k) {
+				securityError(c, 400, "unknown or protected setting")
+				return
+			}
+		}
+		staged := viper.New()
+		staged.SetConfigType("json")
+		staged.SetConfigFile(viper.ConfigFileUsed())
+		staged.SetConfigPermissions(0600)
+		if err := staged.MergeConfigMap(viper.AllSettings()); err != nil {
+			securityError(c, 500, "settings unavailable")
+			return
+		}
 		for k, vs := range c.Request.PostForm {
+			if k == "currentPass" {
+				continue
+			}
 			val := vs[0]
-
+			if val == "" && (k == "system.base.admin_password" || k == "system.email.password" || k == "system.ldap.ldap_bind_password") {
+				continue
+			}
 			switch k {
+			case "system.base.admin_username":
+				if strings.TrimSpace(val) == "" {
+					securityError(c, 400, "administrator username required")
+					return
+				}
+				if val != viper.GetString(k) {
+					staged.Set("system.base.admin_session_version", secureToken())
+				}
 			case "system.base.admin_password":
-				ep, _ := bcrypt.GenerateFromPassword([]byte(val), 12)
+				staged.Set("system.base.admin_session_version", secureToken())
+				if !isValidPassword(val) || len(val) > 72 {
+					securityError(c, 400, "password does not meet policy")
+					return
+				}
+				ep, err := bcrypt.GenerateFromPassword([]byte(val), 12)
+				if err != nil {
+					securityError(c, 500, "password update failed")
+					return
+				}
+				staged.Set("system.base.admin_first_login", false)
 				val = string(ep)
 			case "system.email.password":
 				val, _ = aes.AesEncrypt(val, secretKey)
@@ -758,18 +686,23 @@ func main() {
 
 			switch val {
 			case "true":
-				viper.Set(k, true)
+				staged.Set(k, true)
 			case "false":
-				viper.Set(k, false)
+				staged.Set(k, false)
 			default:
-				viper.Set(k, val)
+				staged.Set(k, val)
 			}
 		}
-		if err := viper.WriteConfig(); err != nil {
+		if err := staged.WriteConfig(); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 
+		for _, key := range staged.AllKeys() {
+			viper.Set(key, staged.Get(key))
+		}
+		loadConfig()
+		upadteOvpnConfig()
 		c.JSON(http.StatusOK, gin.H{"message": "更新成功"})
 	})
 
@@ -887,6 +820,7 @@ func main() {
 		ovpn.POST("/login", func(c *gin.Context) {
 			var u User
 			c.ShouldBind(&u)
+			u.MfaSecret = ""
 			u.OvpnConfig = c.PostForm("common_name")
 
 			err := u.Login(true)
@@ -1031,6 +965,17 @@ func main() {
 				)
 				`, gid, gid)
 
+			// Load group names before opening the streaming user cursor. A nested
+			// query per row can deadlock a bounded SQLite connection pool.
+			var exportGroups []Group
+			if err := db.Select("id", "name").Find(&exportGroups).Error; err != nil {
+				securityError(c, 500, "export failed")
+				return
+			}
+			groupNames := map[uint]string{}
+			for _, group := range exportGroups {
+				groupNames[group.ID] = group.Name
+			}
 			rows, err := db.Model(&User{}).Where("gid = ? OR gid IN (?)", gid, gQuery).Rows()
 			if err != nil {
 				return
@@ -1039,7 +984,6 @@ func main() {
 
 			for rows.Next() {
 				var u User
-				var g Group
 
 				db.ScanRows(rows, &u)
 
@@ -1048,18 +992,17 @@ func main() {
 					enable = "1"
 				}
 
-				dp, _ := aes.AesDecrypt(u.Password, secretKey)
 				record := []string{
 					strconv.Itoa(int(u.ID)),
 					u.Username,
-					dp,
+					"",
 					u.Name,
-					g.Get(strconv.Itoa(int(u.Gid))).Name,
+					groupNames[u.Gid],
 					enable,
 					u.ExpireDate,
 					u.IpAddr,
 					u.OvpnConfig,
-					u.MfaSecret,
+					strconv.FormatBool(u.MfaSecret != ""),
 					u.CreatedAt.Format("2006-01-02 15:04:05"),
 				}
 
@@ -1078,6 +1021,7 @@ func main() {
 		ovpn.POST("/user", func(c *gin.Context) {
 			var u User
 			c.ShouldBind(&u)
+			u.MfaSecret = ""
 
 			file, err := c.FormFile("file")
 			if err != nil {
@@ -1151,7 +1095,7 @@ func main() {
 			} else {
 				sendNotifyEmail := c.PostForm("sendNotifyEmail")
 				if sendNotifyEmail == "true" {
-					go func() {
+					func() {
 						var tpl *template.Template
 						var buf bytes.Buffer
 
@@ -1188,6 +1132,7 @@ func main() {
 		ovpn.PATCH("/user", func(c *gin.Context) {
 			var u User
 			c.ShouldBind(&u)
+			u.MfaSecret = ""
 
 			if ipAddr, ok := c.Request.PostForm["ipAddr"]; ok {
 				if ipAddr[0] == "" {
@@ -1207,7 +1152,7 @@ func main() {
 			} else {
 				sendNotifyEmail := c.PostForm("sendNotifyEmail")
 				if sendNotifyEmail == "true" {
-					go func() {
+					func() {
 						var cu User
 						db.First(&cu, u.ID)
 
@@ -1564,83 +1509,6 @@ func main() {
 
 	client := r.Group("/client")
 	{
-		client.GET("/userinfo", func(c *gin.Context) {
-			var u User
-
-			session := sessions.Default(c)
-			if user, ok := session.Get("user").(string); ok {
-				u.Username = user
-			}
-
-			if ldapAuth {
-				l, err := InitLdap()
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-					return
-				}
-
-				lu, err := l.Get(u.Username)
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-					return
-				}
-
-				c.JSON(http.StatusOK, lu)
-				return
-			}
-
-			c.JSON(http.StatusOK, u.Info())
-		})
-
-		client.POST("/modifyPass", func(c *gin.Context) {
-			var u User
-			c.ShouldBind(&u)
-
-			session := sessions.Default(c)
-			if user, ok := session.Get("user").(string); ok {
-				cu := User{Username: user}.Info()
-				if u.ID != cu.ID {
-					c.JSON(http.StatusInternalServerError, gin.H{"message": "非法请求"})
-					return
-				}
-			}
-
-			if !isValidPassword(u.Password) {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "密码不满足要求（长度12位，包含大小写字母、数字、特殊字符）"})
-				return
-			}
-
-			if currentPass, ok := c.Request.PostForm["currentPass"]; ok {
-				if u.Info().Password != currentPass[0] {
-					c.JSON(http.StatusUnauthorized, gin.H{"message": "当前密码错误"})
-					return
-				}
-			}
-
-			err := db.Transaction(func(tx *gorm.DB) error {
-				data := User{
-					Password: u.Password,
-				}
-
-				if isFirstLogin, ok := c.Request.PostForm["isFirstLogin"]; ok {
-					val := isFirstLogin[0] == "true"
-					data.IsFirstLogin = &val
-				}
-
-				if err := tx.Model(&u).Updates(data).Error; err != nil {
-					return err
-				}
-
-				return nil
-			})
-
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			} else {
-				c.JSON(http.StatusOK, gin.H{"message": "密码修改成功"})
-			}
-		})
-
 		client.GET("/userConfig", func(c *gin.Context) {
 			var u User
 			session := sessions.Default(c)
@@ -1723,75 +1591,7 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"filename": configName, "content": content})
 		})
 
-		client.GET("/mfa", func(c *gin.Context) {
-			if ldapAuth {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "LDAP用户不支持设置MFA"})
-				return
-			}
-
-			var u User
-
-			session := sessions.Default(c)
-			if user, ok := session.Get("user").(string); ok {
-				u.Username = user
-			}
-
-			u = u.Info()
-			if u.MfaSecret == "" {
-				secret, err := GenMfa(u.Username)
-				if err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Errorf("MFA: %w", err).Error()})
-				} else {
-					u.MfaSecret = secret
-					c.JSON(http.StatusOK, gin.H{"mfaEnable": false, "user": u})
-				}
-			} else {
-				c.JSON(http.StatusOK, gin.H{"mfaEnable": true, "user": u})
-			}
-		})
-
-		client.POST("/mfa", func(c *gin.Context) {
-			var u User
-			c.ShouldBind(&u)
-
-			session := sessions.Default(c)
-			if user, ok := session.Get("user").(string); ok {
-				cu := User{Username: user}.Info()
-				if u.ID != cu.ID {
-					c.JSON(http.StatusInternalServerError, gin.H{"message": "非法请求"})
-					return
-				}
-			}
-
-			passcode := c.PostForm("passcode")
-
-			vaild := ValidateMfa(passcode, u.MfaSecret)
-			if !vaild {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "验证码错误"})
-			} else {
-				db.Model(&User{}).Where("id = ?", u.ID).Update("mfa_secret", u.MfaSecret)
-				c.JSON(http.StatusOK, gin.H{"message": "MFA已启用"})
-			}
-		})
-
-		client.DELETE("/mfa/:id", func(c *gin.Context) {
-			var u User
-			c.ShouldBindUri(&u)
-
-			session := sessions.Default(c)
-			if user, ok := session.Get("user").(string); ok {
-				cu := User{Username: user}.Info()
-				if !(u.ID == cu.ID || cu.Username == adminUsername) {
-					c.JSON(http.StatusInternalServerError, gin.H{"message": "非法请求"})
-					return
-				}
-			}
-
-			db.Model(&User{}).Where("id = ?", u.ID).Update("mfa_secret", nil)
-
-			c.JSON(http.StatusOK, gin.H{"message": "MFA已停用"})
-		})
 	}
 
-	r.Run(fmt.Sprintf(":%s", webPort))
+	return r
 }
