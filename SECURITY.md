@@ -2,7 +2,7 @@
 
 ## Supported versions and reporting
 
-This independent GavinTan/openvpn fork has **no approved hardened release yet**.
+This independent GavinTan/openvpn fork has owner-approved release **v1.0.0-hardened** (2026-10-25), Linux/amd64. Image build commit: `35204c82885e87e1165fe1dda24a22f141ead303`; digest: `sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66`. The owner reported successful local deployment and client connection; this is separate from network-none automated acceptance. No guaranteed support lifetime is announced.
 The initial reviewed baseline is `cb632205b01b66551342e609e4a6b1bbf771c55f`.
 Current source identity: run `git rev-parse HEAD` and record whether the tree is
 clean. An image must record the exact clean source commit in its OCI revision.
@@ -50,8 +50,9 @@ OpenVPN startup/TUN, UDP, reconnect/persistence, login/MFA and revoke flows.
 
 ## Known limitations / security debt
 
-* Final integration and release acceptance remain pending until explicitly
-  documented. No stable/version publication is authorized by these files.
+* Final isolated acceptance: 89 PASS, external VPN NOT_TESTED by that harness.
+  The owner separately confirmed local deployment and successful client connection
+  and authorized release. Full dataplane/LDAP/OS-CVE coverage is not claimed.
 * Signed Debian packages update over time; package repositories are not pinned to
   a snapshot. Record the final installed package inventory and scan the resulting
   image. A pinned base digest does not freeze subsequently installed packages.

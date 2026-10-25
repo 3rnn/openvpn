@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased — v1.0.0-hardened candidate (NOT published)
+## v1.0.0-hardened — 2026-10-25
+
+Approved by the owner after automated acceptance and owner-reported local deployment/client connection success. Image build commit: `35204c82885e87e1165fe1dda24a22f141ead303`; immutable image digest: `sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66`. Documentation/delivery commits are separate; the version image is not rebuilt.
+
+Final checks: normal Go and race each 53 top-level tests plus 51 subtests; vet PASS; browser 12 PASS; ShellCheck 4 scripts/hooks PASS; runtime acceptance 89 PASS and external VPN NOT_TESTED by the isolated harness. Owner separately reported successful local deployment and client connection. Full DNS/routing/MTU/revocation and real LDAP acceptance are not implied. Govulncheck found 0 reachable/imported-package vulnerabilities; unused module-only GO-2026-5932 remains disclosed.
 
 Origin: independent fork of GavinTan/openvpn at reviewed baseline
 `cb632205b01b66551342e609e4a6b1bbf771c55f`. Preserve MIT copyright. Upstream is

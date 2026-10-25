@@ -1,7 +1,9 @@
 services:
   openvpn:
-    # Replace the username only after the release is tested and approved.
-    image: ${DOCKERHUB_USERNAME:?set Docker Hub username}/openvpn:v1.0.0-hardened
+    # Immutable published release; do not replace this version's content.
+    image: 3rnn/openvpn:v1.0.0-hardened@sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66
+    platform: linux/amd64
+    # Runtime uses root and Docker default capabilities PLUS NET_ADMIN.
     cap_add:
       - NET_ADMIN
     devices:
@@ -14,6 +16,11 @@ services:
     volumes:
       - ./data:/data
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     # Forwarding is container-network-namespace scoped, never host sysctl.
     sysctls:
       net.ipv4.ip_forward: "1"

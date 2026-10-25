@@ -7,7 +7,7 @@ Reviewed baseline: `cb632205b01b66551342e609e4a6b1bbf771c55f`.
 Implementation reviewed through `44f472a7976447c7d5b12622963c3ad96e37ddc8`.
 Find the enclosing documentation commit using `git rev-parse HEAD`; documentation cannot contain its own commit hash. No upstream merges were performed.
 
-Candidate: `v1.0.0-hardened`. This document is not a release announcement or permission to move stable. Registry publication awaits owner-supplied username and owner confirmation of terminal login. Stable requires separate owner approval.
+Release: `v1.0.0-hardened`, owner-approved on 2026-10-25 after the owner reported local deployment and successful client connection. Build commit/OCI revision: `35204c82885e87e1165fe1dda24a22f141ead303`; published digest: `sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66`. Existing immutable version content is reused, not rebuilt. Documentation commits are recorded separately in release notes.
 
 ## Changes mapped to original findings
 
@@ -35,7 +35,7 @@ Relevant executable checks:
 - Chromium `node --test tests/frontend-security*.cjs`: 12 tests including real Go-handler integration.
 - ShellCheck of entrypoint/auth/retired installer, `bash -n`, shell PKI test in isolated container.
 - Canonical Dockerfile source build; no compiler/GCC/Git required in runtime.
-- Prior canonical `744e155` acceptance: 89 passing runtime checks, including real login, bootstrap change, MFA, CSRF, session revocation, certificate issuance/revocation, stale/missing CRL recovery, TUN/UDP, and persistent-data restart/recreation. Final candidate must repeat acceptance after the settings fix.
+- Prior canonical `744e155` acceptance: 89 passing runtime checks, including real login, bootstrap change, MFA, CSRF, session revocation, certificate issuance/revocation, stale/missing CRL recovery, TUN/UDP, and persistent-data restart/recreation. Final published-image acceptance repeated after the settings fix: 89 PASS, 1 NOT_TESTED; normal/race each 53 top-level tests plus 51 subtests, vet PASS, browser 12 PASS, ShellCheck 4 scripts/hooks PASS, actual EasyRSA and 4 runtime-shell tests PASS. Persistence compared 54 files exactly across restart/adoption/recreation.
 - Parent Go vulnerability scan: no called or imported findings; one unused module-only advisory (OpenPGP) remains. This does not assess OS packages or browser vendor libraries.
 
 Private, credential-free result summaries are stored outside Git under the local scratch acceptance directory. Test volumes contain synthetic credentials/keys and must not be committed or published. No external VPN handshake was performed: network-none testing deliberately has no connection to production networks. Local TUN/listener health does not prove external routing, NAT, MTU or client connectivity.
@@ -48,7 +48,7 @@ The incident was disclosed. Following explicit owner authorization, Supervisor w
 
 ## Remaining risks and release gates
 
-- External VPN client handshake/data-plane acceptance is not tested.
+- The isolated harness did not test external VPN. The owner separately reported successful local deployment/client connection on 2026-10-25. Full DNS/routing/MTU/revocation coverage and real LDAP are not established by that report.
 - Runtime root and Docker default capabilities plus NET_ADMIN remain; not privileged mode, not only NET_ADMIN. Never use host networking or mount Docker socket.
 - Same authenticated identity/CN connections share the latest atomic policy; different identities are isolated.
 - Signed Debian package resolution is mutable; pinned bases do not make full builds bit reproducible. Record installed packages and image digest.
