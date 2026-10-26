@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.1.0-hardened — 2026-10-26
+
+- Unified enterprise light administration console across all nine management surfaces.
+- Compact navigation, typography, tables, toolbar alignment, empty/pagination states and semantic status labels.
+- Accessible loading/error/retry, form feedback and mobile layout; local design tokens and DESIGN.md.
+- Presentation-only changes; backend APIs, database, authentication, PKI and firewall execution unchanged.
+- 29 browser regressions pass, including real-handler auth/MFA integration; no new production frontend dependencies.
+- Preserve version v1.0.0-hardened and its immutable image. External VPN testing remains separate from network-none automation.
+
+
 ## v1.0.0-hardened — 2026-10-25
 
 Approved by the owner after automated acceptance and owner-reported local deployment/client connection success. Image build commit: `35204c82885e87e1165fe1dda24a22f141ead303`; immutable image digest: `sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66`. Documentation/delivery commits are separate; the version image is not rebuilt.
