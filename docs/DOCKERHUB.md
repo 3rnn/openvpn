@@ -15,16 +15,16 @@ Docker Hub 完整描述使用根目录 [DOCKERHUB_README.md](../DOCKERHUB_README
 | 字段 | 值 |
 | --- | --- |
 | 仓库 | `3rnn/openvpn` |
-| 正式版本 | `v1.0.0-hardened` |
-| 构建提交 / OCI revision | `35204c82885e87e1165fe1dda24a22f141ead303` |
+| 正式版本 | `v1.1.0-hardened` |
+| 构建提交 / OCI revision | `4db21ef895e34071a9dbd8f8878d9615488e1fa9` |
 | 平台 | `linux/amd64` |
-| 已发布 digest | `sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66` |
+| 已发布 digest | `sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683` |
 
 ```text
-3rnn/openvpn:v1.0.0-hardened@sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66
+3rnn/openvpn:v1.1.0-hardened@sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683
 ```
 
-上游历史 `v1.0.0` 已存在，保持原状；正式加固发行继续用 `v1.0.0-hardened`。发布者核对 Git 正式标签指向构建提交。后续部署文档提交与构建提交分别记录，不用较新的文档提交伪装镜像 OCI revision，不重新构建覆盖已发布版本。
+上游历史 `v1.0.0` 已存在，保持原状；正式加固发行继续用 `v1.1.0-hardened`。发布者核对 Git 正式标签指向构建提交。后续部署文档提交与构建提交分别记录，不用较新的文档提交伪装镜像 OCI revision，不重新构建覆盖已发布版本。
 
 ## 发布核对（维护者操作）
 

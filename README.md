@@ -8,18 +8,18 @@
 
 ## 2. 正式版本与镜像溯源
 
-本次正式发行名称为 **`v1.0.0-hardened`**。仓库已有上游历史 `v1.0.0` 标签，不能复用或覆盖。
+本次正式发行名称为 **`v1.1.0-hardened`**。仓库已有上游历史 `v1.0.0` 标签，不能复用或覆盖。
 
 | 项目 | 固定值 |
 | --- | --- |
 | Docker Hub | `3rnn/openvpn` |
-| 版本 | `v1.0.0-hardened` |
+| 版本 | `v1.1.0-hardened` |
 | 平台 | **仅 `linux/amd64`** |
-| 镜像构建提交 / OCI revision | `35204c82885e87e1165fe1dda24a22f141ead303` |
-| 已发布镜像 digest | `sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66` |
+| 镜像构建提交 / OCI revision | `4db21ef895e34071a9dbd8f8878d9615488e1fa9` |
+| 已发布镜像 digest | `sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683` |
 
 ```text
-3rnn/openvpn:v1.0.0-hardened@sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66
+3rnn/openvpn:v1.1.0-hardened@sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683
 ```
 
 镜像不可变；后续文档提交不改变该构建提交，也不重新构建覆盖该版本。生产使用版本 + digest，不跟随 `latest` 或自动跟随可变 `stable`。Git 正式标签应指向上表构建提交，更新后的部署文档单独追溯。

@@ -4,11 +4,11 @@
 
 面向 **Debian 13 + Docker** 的 OpenVPN 与 Web 管理面板，源自 `GavinTan/openvpn`，由 `3rnn/openvpn` 独立维护，非上游官方发行；保留 MIT 许可证。应用从审查过的源码编译，不下载上游应用二进制。
 
-**正式发行 `v1.0.0-hardened`，仅 `linux/amd64`。**
+**正式发行 `v1.1.0-hardened`，仅 `linux/amd64`。**
 
 ```text
-3rnn/openvpn:v1.0.0-hardened@sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66
-构建提交 / OCI revision：35204c82885e87e1165fe1dda24a22f141ead303
+3rnn/openvpn:v1.1.0-hardened@sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683
+构建提交 / OCI revision：4db21ef895e34071a9dbd8f8878d9615488e1fa9
 源码仓库：https://github.com/3rnn/openvpn
 ```
 
