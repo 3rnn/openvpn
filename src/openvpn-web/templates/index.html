@@ -17,301 +17,6 @@
     <link rel="stylesheet" type="text/css" href="static/css/responsive.bootstrap5.min.css" />
     <link rel="stylesheet" href="static/css/index.css" />
 
-    <style>
-      .dropdown-menu {
-        --bs-dropdown-min-width: 8rem;
-      }
-
-      td .dropdown-menu {
-        --bs-dropdown-min-width: 6rem;
-      }
-
-      .dataTables_info {
-        padding-top: 0 !important;
-      }
-
-      table.dataTable th.dt-type-date div.dt-column-header,
-      table.dataTable th.dt-type-numeric div.dt-column-header {
-        flex-direction: row;
-      }
-
-      .offcanvas-body button.nav-link {
-        color: rgba(255, 255, 255, 0.85) !important;
-      }
-
-      .offcanvas-body button.nav-link:hover,
-      .offcanvas-body button.nav-link:focus,
-      .offcanvas-body button.nav-link:active {
-        color: #fff !important;
-      }
-
-      .bi {
-        display: inline-block;
-        vertical-align: -0.125em;
-        fill: currentcolor;
-      }
-
-      th.dt-center,
-      td.dt-center {
-        padding-right: 26px;
-      }
-
-      .desc-item {
-        padding: 0.5rem 0;
-        /* border-bottom: 1px solid #dee2e6; */
-      }
-
-      .desc-item:nth-child(odd) {
-        background-color: #f8f9fa;
-      }
-
-      .desc-item:nth-child(even) {
-        background-color: #ffffff;
-      }
-
-      .desc-label {
-        font-weight: 500;
-        color: #495057;
-      }
-
-      .desc-value {
-        word-wrap: break-word;
-        word-break: break-all;
-        white-space: normal;
-        color: #212529;
-      }
-
-      .file-drop-zone {
-        border: 2px dashed #ccc;
-        border-radius: 8px;
-        padding: 40px;
-        text-align: center;
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-
-      .file-drop-zone .bg-light {
-        background-color: #f8f9fa;
-      }
-
-      .w-tooltip {
-        --bs-tooltip-bg: #0d6efd;
-        --bs-tooltip-color: var(--bs-white);
-      }
-
-      .tooltip-inner {
-        text-align: left;
-        word-break: break-all;
-      }
-
-      /* 左侧树形菜单样式 */
-      #treeMenu ul:first-of-type {
-        overflow-y: auto;
-        max-height: 75vh;
-      }
-
-      .tree-menu {
-        list-style: none;
-        padding-left: 0;
-      }
-
-      .tree-menu .tree-menu {
-        padding-left: 20px;
-      }
-
-      .tree-item {
-        padding: 8px 12px;
-        margin: 2px 0;
-        border-radius: 4px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: background-color 0.2s;
-      }
-
-      .tree-item:hover {
-        background-color: #e9ecef;
-      }
-
-      .tree-item.selected {
-        background-color: #0d6efd;
-        color: white;
-      }
-
-      .tree-toggle {
-        width: 16px;
-        height: 16px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-
-      .tree-toggle.expanded {
-        transform: rotate(90deg);
-      }
-
-      .tree-toggle.hidden {
-        visibility: hidden;
-      }
-
-      #contextMenu {
-        display: none;
-        position: absolute;
-        z-index: 1050;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-
-      #editUserModal .dropdown-menu {
-        width: 100%;
-        max-height: 300px;
-        overflow-y: auto;
-        padding: 0;
-        font-size: 0.875rem;
-      }
-
-      #editUserModal .dropdown-item:hover,
-      .dropdown-item:focus {
-        background-color: selecteditem;
-        color: selecteditemtext;
-      }
-
-      .w-min-120 {
-        min-width: 120px;
-      }
-
-      .w-min-160 {
-        min-width: 160px;
-      }
-
-      .w-min-200 {
-        min-width: 200px;
-      }
-
-      .w-max-200 {
-        max-width: 200px;
-      }
-
-      .w-max-250 {
-        max-width: 250px;
-      }
-
-      #addFirewallModal select::-webkit-scrollbar,
-      #editFirewallModal select::-webkit-scrollbar {
-        width: 5px;
-      }
-      #addFirewallModal select::-webkit-scrollbar-thumb,
-      #editFirewallModal select::-webkit-scrollbar-thumb {
-        background: #ccc;
-        border-radius: 5px;
-      }
-      #addFirewallModal select::-webkit-scrollbar-track,
-      #editFirewallModal select::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      /* 防火墙树形穿梭框 */
-      .firewall-tree {
-        border: 1px solid #ced4da;
-        border-radius: 0.375rem;
-        padding: 0.25rem;
-        overflow: auto;
-        background: #fff;
-      }
-      .firewall-tree.disabled {
-        background: #e9ecef;
-        cursor: not-allowed;
-      }
-      .firewall-tree.disabled * {
-        pointer-events: none;
-      }
-      .firewall-tree::-webkit-scrollbar {
-        width: 5px;
-      }
-      .firewall-tree::-webkit-scrollbar-thumb {
-        background: #ccc;
-        border-radius: 5px;
-      }
-      .firewall-tree::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .firewall-tree-list {
-        list-style: none;
-        padding-left: 0;
-        margin: 0;
-      }
-      .firewall-tree-list .firewall-tree-list {
-        padding-left: 18px;
-        position: relative;
-      }
-      .firewall-tree-item {
-        padding: 3px 6px;
-        margin: 1px 0;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        font-size: 0.875rem;
-        user-select: none;
-        white-space: nowrap;
-      }
-      .firewall-tree-item:hover {
-        background-color: #f0f4ff;
-      }
-      .firewall-tree-item.selected {
-        background-color: #0d6efd;
-        color: #fff;
-      }
-      .firewall-tree-item.selected .text-warning,
-      .firewall-tree-item.selected .text-info,
-      .firewall-tree-item.selected .text-muted {
-        color: #fff !important;
-      }
-      .firewall-tree-item.phantom {
-        cursor: default;
-        color: #6c757d;
-      }
-      .firewall-tree-item.phantom:hover {
-        background-color: transparent;
-      }
-      .firewall-tree-item .tree-toggle {
-        width: 14px;
-        height: 14px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        font-size: 10px;
-        transition: transform 0.15s;
-      }
-      .firewall-tree-item .tree-toggle.expanded {
-        transform: rotate(90deg);
-      }
-      .firewall-tree-item .tree-toggle.hidden {
-        visibility: hidden;
-      }
-      .firewall-tree-item .tree-name {
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .firewall-tree-empty {
-        text-align: center;
-        color: #adb5bd;
-        font-size: 0.8rem;
-        padding: 8px 4px;
-      }
-      .firewall-tree-section-title {
-        font-size: 0.75rem;
-        color: #6c757d;
-        padding: 4px 6px 2px;
-        font-weight: 500;
-        border-bottom: 1px dashed #e9ecef;
-        margin-bottom: 2px;
-      }
-    </style>
   </head>
 
   <body class="console-body">
@@ -323,7 +28,7 @@
     </header>
     <aside class="offcanvas-lg offcanvas-start console-sidebar" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
       <div class="sidebar-brand"><span class="brand-mark" aria-hidden="true">O</span><div><strong id="offcanvasNavbarLabel">OpenVPN</strong><small>网络访问管理</small></div>
-        <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#offcanvasNavbar" aria-label="关闭导航"></button>
+        <button type="button" class="btn-close d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#offcanvasNavbar" aria-label="关闭导航"></button>
       </div>
       <div class="offcanvas-body">
         <nav aria-label="主要导航" class="console-nav">
@@ -345,7 +50,7 @@
 
     <main class="console-main" id="consoleMain" tabindex="-1">
       <div class="console-section-heading"><p class="section-eyebrow">工作空间</p><h1 id="consoleTitle">在线状态</h1><p id="consoleDescription">查看 VPN 服务状态与当前连接，管理网络访问。</p></div>
-      <div id="serverTable" class="my-3 p-3 bg-body rounded shadow-sm" style="display: none">
+      <div id="serverTable" style="display: none">
         <table class="table table-borderless m-0 text-center">
           <thead class="border-bottom" style="--bs-border-width: 2px">
             <tr>
@@ -369,15 +74,15 @@
       </div>
 
       <div class="console-data-layout">
-        <div class="tree-panel my-3 me-3" style="width: 250px">
+        <div class="tree-panel">
           <div id="treeContainer">
             <ul id="treeMenu" class="tree-menu"></ul>
           </div>
         </div>
 
         <div class="console-table-column">
-          <div id="vtableContainer" class="p-3 bg-body rounded shadow-sm">
-            <table id="vtable" class="table table-striped align-middle my-2" style="width: 100%"></table>
+          <div id="vtableContainer">
+            <table id="vtable" class="table align-middle" style="width: 100%"></table>
           </div>
         </div>
       </div>
@@ -455,7 +160,7 @@
                   </svg>
                 </label>
                 <input type="text" class="form-control form-control-sm float-end w-75" name="ipAddr" />
-                <div class="form-text d-none mt-2" style="left: 27%; position: absolute"></div>
+                <div class="form-text d-none mt-2" ></div>
               </div>
 
               <div class="form-group">
@@ -561,7 +266,7 @@
                   </svg>
                 </label>
                 <input type="text" class="form-control form-control-sm float-end w-75" name="ipAddr" />
-                <div class="form-text d-none mt-2" style="left: 27%; position: absolute"></div>
+                <div class="form-text d-none mt-2" ></div>
               </div>
             </div>
             <div class="modal-footer">
@@ -725,7 +430,7 @@
                   name="newPassAgain"
                   required
                 />
-                <div class="form-text d-none mt-2" style="left: 27%; position: absolute"></div>
+                <div class="form-text d-none mt-2" ></div>
               </div>
             </div>
             <div class="modal-footer">
@@ -788,7 +493,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-            <button type="submit" class="btn btn-primary" id="restartSrvSumbit">确认</button>
+            <button type="submit" class="btn btn-primary danger-confirm" id="restartSrvSumbit">确认</button>
           </div>
         </div>
       </div>
@@ -812,7 +517,7 @@
             <label>客户端</label>
             <input type="text" class="form-control form-control-lg float-end w-75" name="name" disabled />
           </div>
-          <textarea class="form-control form-control-lg border border-0" name="config" rows="16"></textarea>
+          <textarea class="form-control form-control-lg" aria-label="配置内容" name="config" rows="16"></textarea>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
             <button type="submit" class="btn btn-primary" id="editClientSumbit">确认</button>
@@ -835,7 +540,7 @@
             <h5 class="modal-title">server.conf</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <textarea class="form-control form-control-lg border border-0" name="config" rows="16"></textarea>
+          <textarea class="form-control form-control-lg" aria-label="配置内容" name="config" rows="16"></textarea>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
             <button type="submit" class="btn btn-primary" id="editServerSumbit">确认</button>
@@ -879,7 +584,7 @@
       id="settingsModal"
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 1000px">
+      <div class="modal-dialog modal-lg modal-dialog-centered" >
         <div class="modal-content">
           <div class="modal-header">
             <ul class="nav nav-pills" role="tablist">
@@ -928,7 +633,7 @@
             </ul>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body overflow-auto" style="height: 500px">
+          <div class="modal-body overflow-auto">
             <div class="alert alert-warning">
               <label for="settingsCurrentPass">更改设置需要当前管理员密码</label>
               <input type="password" id="settingsCurrentPass" autocomplete="current-password" class="form-control form-control-sm" />
@@ -942,9 +647,9 @@
                 aria-labelledby="pills-base-tab"
                 tabindex="0"
               >
-                <div class="mx-5 my-3">
+                <div class="settings-section">
                   <h6 class="mb-3 fw-bold">基本</h6>
-                  <div class="ms-5">
+                  <div class="settings-fields">
                     <div class="row mb-1">
                       <label class="col-sm-3 col-form-label">
                         站点
@@ -968,7 +673,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="siteUrl"
                           value="http://127.0.0.1:8833"
                         />
@@ -980,7 +685,7 @@
                         <input
                           type="number"
                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="webPort"
                           value="8833"
                         />
@@ -991,7 +696,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="adminUsername"
                           value="admin"
                           autocomplete="username"
@@ -1003,7 +708,7 @@
                       <div class="col-sm-9">
                         <input
                           type="password"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           autocomplete="new-password"
                           id="adminPassword"
                         />
@@ -1091,7 +796,7 @@
                         <input
                           type="number"
                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="maxDuplicateLogin"
                           min="0"
                           value="0"
@@ -1122,7 +827,7 @@
                         <input
                           type="number"
                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="historyMaxDays"
                           value="90"
                         />
@@ -1130,9 +835,9 @@
                     </div>
                   </div>
                 </div>
-                <div class="mx-5 my-3">
+                <div class="settings-section">
                   <h6 class="mb-3 fw-bold">LDAP配置</h6>
-                  <div class="ms-5">
+                  <div class="settings-fields">
                     <div class="row mb-1 align-items-baseline">
                       <label class="col-sm-3 col-form-label">LDAP</label>
                       <div class="col-sm-9">
@@ -1145,7 +850,7 @@
                     <div class="row mb-1">
                       <label class="col-sm-3 col-form-label">LDAP地址</label>
                       <div class="col-sm-9">
-                        <input type="text" class="form-control form-control-sm border-0 border-bottom" id="ldapUrl" />
+                        <input type="text" class="form-control form-control-sm" id="ldapUrl" />
                         <div id="ldapTlsWarning" class="form-text text-warning">
                           LDAP 使用 StartTLS，LDAPS 默认验证服务器证书。自签 CA 请通过 LDAP_CA_FILE / LDAP_CA_DIR 配置。
                           LDAP_TLS_INSECURE_SKIP_VERIFY=true 会禁用证书验证并使密码面临中间人攻击；仅用于明确接受风险的临时诊断，不能作为常规配置。
@@ -1157,7 +862,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ldapBindDn"
                         />
                       </div>
@@ -1167,7 +872,7 @@
                       <div class="col-sm-9">
                         <input
                           type="password"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           autocomplete="current-password"
                           id="ldapBindPassword"
                         />
@@ -1178,7 +883,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ldapBaseDn"
                         />
                       </div>
@@ -1206,7 +911,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ldapUserAttribute"
                           value="uid"
                         />
@@ -1235,7 +940,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ldapUserAttrIpaddrName"
                         />
                       </div>
@@ -1263,7 +968,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ldapUserAttrConfigName"
                         />
                       </div>
@@ -1300,22 +1005,22 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ldapUserGroupDn"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
-                <div class="mx-5 my-3">
+                <div class="settings-section">
                   <h6 class="mb-3 fw-bold">邮件配置</h6>
-                  <div class="ms-5">
+                  <div class="settings-fields">
                     <div class="row mb-1">
                       <label class="col-sm-3 col-form-label">主题前缀</label>
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="emailSendSubjectPrefix"
                         />
                       </div>
@@ -1343,7 +1048,7 @@
                       <div class="col-sm-9">
                         <input
                           type="email"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="emailSendFrom"
                         />
                       </div>
@@ -1353,7 +1058,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="emailSmtpHost"
                         />
                       </div>
@@ -1364,7 +1069,7 @@
                         <input
                           type="number"
                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="emailSmtpPort"
                           value="25"
                         />
@@ -1375,7 +1080,7 @@
                       <div class="col-sm-9">
                         <input
                           type="email"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="emailSmtpUsername"
                         />
                       </div>
@@ -1385,7 +1090,7 @@
                       <div class="col-sm-9">
                         <input
                           type="password"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="emailSmtpPassword"
                         />
                       </div>
@@ -1445,7 +1150,7 @@
                         <form id="emailTest" class="d-flex gap-2">
                           <input
                             type="email"
-                            class="form-control form-control-sm border-0 border-bottom flex-fill"
+                            class="form-control form-control-sm flex-fill"
                             id="emailTestTo"
                             required
                           />
@@ -1474,15 +1179,15 @@
                 aria-labelledby="pills-client-tab"
                 tabindex="0"
               >
-                <div class="mx-5 my-3">
+                <div class="settings-section">
                   <h6 class="mb-3 fw-bold">客户端链接</h6>
-                  <div class="ms-5">
+                  <div class="settings-fields">
                     <div class="row mb-1">
                       <label class="col-sm-2 col-form-label">windows</label>
                       <div class="col-sm-10">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="windowsClientUrl"
                           value="https://openvpn.net/downloads/openvpn-connect-v3-windows.msi"
                         />
@@ -1493,7 +1198,7 @@
                       <div class="col-sm-10">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="macosClientUrl"
                           value="https://openvpn.net/downloads/openvpn-connect-v3-macos.dmg"
                         />
@@ -1504,7 +1209,7 @@
                       <div class="col-sm-10">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="linuxClientUrl"
                           value="https://openvpn.net/openvpn-connect-v3-linux/"
                         />
@@ -1515,7 +1220,7 @@
                       <div class="col-sm-10">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="androidClientUrl"
                           value="https://play.google.com/store/apps/details?id=de.blinkt.openvpn"
                         />
@@ -1526,7 +1231,7 @@
                       <div class="col-sm-10">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="iosClientUrl"
                           value="https://itunes.apple.com/us/app/openvpn-connect/id590379981?mt=8"
                         />
@@ -1534,15 +1239,15 @@
                     </div>
                   </div>
                 </div>
-                <div class="mx-5 my-3">
+                <div class="settings-section">
                   <h6 class="mb-3 fw-bold">MFA应用程序链接</h6>
-                  <div class="ms-5">
+                  <div class="settings-fields">
                     <div class="row mb-1">
                       <label class="col-sm-2 col-form-label">android</label>
                       <div class="col-sm-10">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="androidMfaAppUrl"
                           value="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2"
                         />
@@ -1553,7 +1258,7 @@
                       <div class="col-sm-10">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="iosMfaAppUrl"
                           value="https://apps.apple.com/us/app/google-authenticator/id388497605"
                         />
@@ -1573,16 +1278,16 @@
                   注意：需要启用系统-基本-自动更新配置才会应用到openvpn配置文件，且重启openvpn服务后修改的配置才生效。
                   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <div class="mx-5 my-3">
+                <div class="settings-section">
                   <h6 class="mb-3 fw-bold">配置</h6>
-                  <div class="ms-5">
+                  <div class="settings-fields">
                     <div class="row mb-1">
                       <label class="col-sm-3 col-form-label">端口</label>
                       <div class="col-sm-9">
                         <input
                           type="number"
                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ovpnPort"
                           value="1194"
                         />
@@ -1611,7 +1316,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ovpnProto"
                           value="udp"
                         />
@@ -1623,7 +1328,7 @@
                         <input
                           type="number"
                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ovpnMaxClients"
                           value="200"
                         />
@@ -1661,7 +1366,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ovpnSubnet"
                           value="10.8.0.0/24"
                         />
@@ -1672,7 +1377,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ovpnManagement"
                           value="127.0.0.1:7505"
                         />
@@ -1692,7 +1397,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ovpnSubnet6"
                           value="fdaf:f178:e916:6dd0::/64"
                         />
@@ -1703,7 +1408,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ovpnPushDns1"
                           value="8.8.8.8"
                         />
@@ -1714,7 +1419,7 @@
                       <div class="col-sm-9">
                         <input
                           type="text"
-                          class="form-control form-control-sm border-0 border-bottom"
+                          class="form-control form-control-sm"
                           id="ovpnPushDns2"
                           value="2001:4860:4860::8888"
                         />
@@ -1789,7 +1494,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <textarea
-            class="form-control form-control-lg border border-0 p-1"
+            class="form-control form-control-lg p-1"
             name="config"
             rows="10"
             placeholder='push "route 192.168.8.0 255.255.255.0"&#10;push "redirect-gateway def1 ipv6 bypass-dhcp"'
@@ -1938,32 +1643,31 @@
       id="addFirewallModal"
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 1000px">
+      <div class="modal-dialog modal-lg modal-dialog-centered" >
         <div class="modal-content">
           <form>
             <div class="modal-header">
               <h5 class="modal-title">添加规则</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body overflow-auto" style="height: 500px">
+            <div class="modal-body overflow-auto">
               <div class="row mb-3">
                 <label class="col-sm-2 col-form-label">源地址</label>
                 <div class="col-sm-10 d-flex align-items-start justify-content-center gap-3">
                   <div class="col-sm-5">
                     <input type="text" name="sip" class="form-control mb-1" placeholder="IP或者IP段" />
-                    <div class="firewall-tree" data-name="sug" style="height: 190px"></div>
+                    <div class="firewall-tree firewall-tree-source" data-name="sug"></div>
                   </div>
 
                   <div
-                    class="col-sm-1 text-center d-flex flex-column gap-3 justify-content-center"
-                    style="width: 100px; height: 232px"
+                    class="firewall-transfer-controls col-sm-1 text-center d-flex gap-3 justify-content-center"
                   >
                     <button type="button" class="btn btn-primary btn-sm" name="saddBtn">加入 >></button>
                     <button type="button" class="btn btn-danger btn-sm" name="sdelBtn"><< 移除</button>
                   </div>
 
                   <div class="col-sm-5">
-                    <div class="firewall-tree" data-name="sg" style="height: 232px"></div>
+                    <div class="firewall-tree firewall-tree-selection" data-name="sg"></div>
                   </div>
                 </div>
               </div>
@@ -1972,19 +1676,18 @@
                 <div class="col-sm-10 d-flex align-items-start justify-content-center gap-3">
                   <div class="col-sm-5">
                     <input type="text" name="dip" class="form-control mb-1" placeholder="IP或者IP段" />
-                    <div class="firewall-tree disabled" data-name="dug" style="height: 190px"></div>
+                    <div class="firewall-tree disabled firewall-tree-source" data-name="dug"></div>
                   </div>
 
                   <div
-                    class="col-sm-1 text-center d-flex flex-column gap-3 justify-content-center"
-                    style="width: 100px; height: 232px"
+                    class="firewall-transfer-controls col-sm-1 text-center d-flex gap-3 justify-content-center"
                   >
                     <button type="button" class="btn btn-primary btn-sm" name="daddBtn">加入 >></button>
                     <button type="button" class="btn btn-danger btn-sm" name="ddelBtn"><< 移除</button>
                   </div>
 
                   <div class="col-sm-5">
-                    <div class="firewall-tree" data-name="dg" style="height: 232px"></div>
+                    <div class="firewall-tree firewall-tree-selection" data-name="dg"></div>
                   </div>
                 </div>
               </div>
@@ -2021,33 +1724,32 @@
       id="editFirewallModal"
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 1000px">
+      <div class="modal-dialog modal-lg modal-dialog-centered" >
         <div class="modal-content">
           <form>
             <div class="modal-header">
               <h5 class="modal-title">编辑规则</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body overflow-auto" style="height: 500px">
+            <div class="modal-body overflow-auto">
               <input type="text" name="id" hidden />
               <div class="row mb-3">
                 <label class="col-sm-2 col-form-label">源地址</label>
                 <div class="col-sm-10 d-flex align-items-start justify-content-center gap-3">
                   <div class="col-sm-5">
                     <input type="text" name="sip" class="form-control mb-1" placeholder="IP或者IP段" />
-                    <div class="firewall-tree" data-name="sug" style="height: 190px"></div>
+                    <div class="firewall-tree firewall-tree-source" data-name="sug"></div>
                   </div>
 
                   <div
-                    class="col-sm-1 text-center d-flex flex-column gap-3 justify-content-center"
-                    style="width: 100px; height: 232px"
+                    class="firewall-transfer-controls col-sm-1 text-center d-flex gap-3 justify-content-center"
                   >
                     <button type="button" class="btn btn-primary btn-sm" name="saddBtn">加入 >></button>
                     <button type="button" class="btn btn-danger btn-sm" name="sdelBtn"><< 移除</button>
                   </div>
 
                   <div class="col-sm-5">
-                    <div class="firewall-tree" data-name="sg" style="height: 232px"></div>
+                    <div class="firewall-tree firewall-tree-selection" data-name="sg"></div>
                   </div>
                 </div>
               </div>
@@ -2056,19 +1758,18 @@
                 <div class="col-sm-10 d-flex align-items-start justify-content-center gap-3">
                   <div class="col-sm-5">
                     <input type="text" name="dip" class="form-control mb-1" placeholder="IP或者IP段" />
-                    <div class="firewall-tree disabled" data-name="dug" style="height: 190px"></div>
+                    <div class="firewall-tree disabled firewall-tree-source" data-name="dug"></div>
                   </div>
 
                   <div
-                    class="col-sm-1 text-center d-flex flex-column gap-3 justify-content-center"
-                    style="width: 100px; height: 232px"
+                    class="firewall-transfer-controls col-sm-1 text-center d-flex gap-3 justify-content-center"
                   >
                     <button type="button" class="btn btn-primary btn-sm" name="daddBtn">加入 >></button>
                     <button type="button" class="btn btn-danger btn-sm" name="ddelBtn"><< 移除</button>
                   </div>
 
                   <div class="col-sm-5">
-                    <div class="firewall-tree" data-name="dg" style="height: 232px"></div>
+                    <div class="firewall-tree firewall-tree-selection" data-name="dg"></div>
                   </div>
                 </div>
               </div>

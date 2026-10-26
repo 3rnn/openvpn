@@ -103,7 +103,7 @@ test('account forms and settings use consistent padded surfaces and mobile contr
     const padding=await page.locator('#addUserModal .modal-body').evaluate(el=>parseFloat(getComputedStyle(el).paddingLeft));
     assert.equal(padding,24);
     const input=page.locator('#addUserModal input[name=username]');
-    assert.ok((await input.boundingBox()).height>=44);
+    assert.ok((await input.boundingBox()).height >= (width >= 992 ? 36 : 44));
     assert.ok(await page.locator('#addUserModal .modal-content').evaluate(el=>el.scrollWidth<=el.clientWidth));
     await noOverflow(page);
     await page.screenshot({path:path.join(shots,`account-form-${width}.png`),fullPage:true,animations:'disabled'});

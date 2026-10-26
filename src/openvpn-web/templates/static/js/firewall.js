@@ -120,7 +120,7 @@ tables.firewall = {
     });
   },
   ajax: function (data, callback, settings) {
-    request.get('/ovpn/firewall').then((data) => callback({ data }));
+    return request.get('/ovpn/firewall').then((data) => callback({ data }));
   },
 };
 
@@ -427,7 +427,7 @@ function openFirewallModal(m, data) {
       data.status = $(`${m} input[name='status']`).prop('checked');
     }
 
-    request[isEdit ? 'patch' : 'post']('/ovpn/firewall', data).then((res) => {
+    consoleRequest[isEdit ? 'patch' : 'post']('/ovpn/firewall', data).then((res) => {
       message.success(res.message);
       vtable.ajax.reload(null, false);
       $(m).modal('hide');
@@ -551,7 +551,7 @@ $("#editFirewallModal input[name='dip']").on('input', function () {
 $(document).on('click', '#disableFirewall', function () {
   const data = vtable.row($(this).parents('tr')).data();
 
-  request
+  consoleRequest
     .patch('/ovpn/firewall', {
       ...data,
       status: false,
@@ -568,7 +568,7 @@ $(document).on('click', '#disableFirewall', function () {
 $(document).on('click', '#enableFirewall', function () {
   const data = vtable.row($(this).parents('tr')).data();
 
-  request
+  consoleRequest
     .patch('/ovpn/firewall', {
       ...data,
       status: true,

@@ -92,6 +92,6 @@ tables.history = {
       qt: qt.join(),
     };
 
-    request.get(`/ovpn/history?${new URLSearchParams(params).toString()}`).then((data) => callback(data));
+    return request.get(`/ovpn/history?${new URLSearchParams(params).toString()}`).then((data) => callback(data));
   },
 };

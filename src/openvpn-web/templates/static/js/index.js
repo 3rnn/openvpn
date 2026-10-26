@@ -6,6 +6,8 @@ window.now = null;
 window.lastMonth = null;
 
 await import('/static/js/utils.js');
+const { tablePresentation, initializeForms } = await import('/static/js/console-presentation.js');
+initializeForms();
 await import('/static/js/settings.js');
 const user = await import('/static/js/user.js');
 await import('/static/js/client.js');
@@ -118,7 +120,7 @@ tables.status = {
     }, 1000);
   },
   ajax: function (data, callback, settings) {
-    request.get('/ovpn/online-client').then((res) => {
+    return request.get('/ovpn/online-client').then((res) => {
       const now = new Date();
       res?.clients.forEach((i) => {
         i.downSpeed = 0;
@@ -160,7 +162,16 @@ const sectionContext = {
   cert: ['证书管理', '查看证书有效期与签发状态，按需更新 VPN 证书。'],
 };
 
+// Load the local locale once before any DataTable can be created/destroyed.
+// language.url initializes asynchronously and can resurrect a destroyed table
+// when operators switch sections quickly.
+const tableLanguage = await fetch('/static/zh.json', { credentials: 'same-origin' })
+  .then(response => response.ok ? response.json() : {})
+  .catch(() => ({}));
+let tableGeneration = 0;
 const initTable = (tab) => {
+  const generation = ++tableGeneration;
+  document.getElementById('consoleMain').dataset.section = tab;
   const [title, description] = sectionContext[tab];
   document.getElementById('consoleTitle').textContent = title;
   document.getElementById('consoleDescription').textContent = description;
@@ -172,10 +183,8 @@ const initTable = (tab) => {
   $('#treeContainer').parent().hide();
 
   if (tab === 'status') {
-    $('#vtableContainer').removeClass('my-3').addClass('my-5');
     $('#serverTable').show();
   } else {
-    $('#vtableContainer').removeClass('my-5').addClass('my-3');
     $('#serverTable').hide();
   }
 
@@ -203,14 +212,18 @@ const initTable = (tab) => {
     responsive: true,
     colReorder: true,
     language: {
-      url: '/static/zh.json',
-      loadingRecords: '数据加载中...',
+      ...tableLanguage,
+      loadingRecords: '正在加载，请稍候…',
+      emptyTable: '<span class="table-state-title">暂无' + title + '</span>' + ({client: '点击右上角“添加”创建客户端配置。', user: '点击右上角“添加”创建 VPN 账号。', status: '当前没有在线连接，客户端连接后将显示在这里。', firewall: '点击右上角“添加”创建访问规则。', history: '所选时间范围内暂无连接记录，可调整日期范围。', cert: '暂无可显示的证书，请检查证书初始化状态。'}[tab]),
+      zeroRecords: '<span class="table-state-title">没有匹配结果</span>请调整搜索条件后重试。',
+      search: '',
+      searchPlaceholder: '搜索' + title + '…',
     },
     columnDefs: [{ className: 'dt-center', targets: '_all' }],
     drawCallback: function () {
       $('ul.pagination').addClass('pagination-sm');
     },
-    ...tables[tab],
+    ...tablePresentation(tab, title, tables[tab], () => generation === tableGeneration),
   });
 };
 
@@ -243,7 +256,7 @@ $('#vtable').on('shown.bs.popover', '.btn-delete', function () {
       $(this).prop('disabled', true);
       switch (delType) {
         case 'user':
-          request
+          consoleRequest
             .delete(`/ovpn/user/${row.id}`)
             .then((data) => {
               popoverInstance.hide();
@@ -253,7 +266,7 @@ $('#vtable').on('shown.bs.popover', '.btn-delete', function () {
             .finally(() => $(this).prop('disabled', false));
           break;
         case 'client':
-          request
+          consoleRequest
             .delete(`/ovpn/client/${encodeURIComponent(row.name)}`)
             .then((data) => {
               popoverInstance.hide();
@@ -263,7 +276,7 @@ $('#vtable').on('shown.bs.popover', '.btn-delete', function () {
             .finally(() => $(this).prop('disabled', false));
           break;
         case 'firewall':
-          request
+          consoleRequest
             .delete(`/ovpn/firewall/${row.id}`)
             .then((data) => {
               popoverInstance.hide();
@@ -362,14 +375,14 @@ $('#restartSrv').click(function () {
 });
 
 $('#restartSrvSumbit').click(function () {
-  request.post('/ovpn/server', { action: 'restartSrv' }).then((data) => {
+  consoleRequest.post('/ovpn/server', { action: 'restartSrv' }).then((data) => {
     $('#restartSrvModal').modal('hide');
     message.success(data.message);
   });
 });
 
 $('#sconfig').click(function () {
-  request.post('/ovpn/server', { action: 'getConfig' }).then((data) => {
+  consoleRequest.post('/ovpn/server', { action: 'getConfig' }).then((data) => {
     $('#editServerModal textarea[name="config"]').val(data.content);
     $('#editServerModal').modal('show');
   });
@@ -379,7 +392,7 @@ $('#editServerSumbit').click(function () {
   const content = $('#editServerModal textarea[name="config"]').val();
 
   $('#editServerModal').modal('hide');
-  request.post('/ovpn/server', { action: 'updateConfig', content }).then((data) => {
+  consoleRequest.post('/ovpn/server', { action: 'updateConfig', content }).then((data) => {
     message.success(data.message);
   });
 });
@@ -387,7 +400,7 @@ $('#editServerSumbit').click(function () {
 $(document).on('click', '#killClient', function () {
   const id = vtable.row($(this).parents('tr')).data().id;
 
-  request.post('/ovpn/kill', { cid: id }).then(() => {
+  consoleRequest.post('/ovpn/kill', { cid: id }).then(() => {
     vtable.cell(this).row().remove().draw();
   });
 });
@@ -422,7 +435,7 @@ $('#rateLimitModal form').submit(function (e) {
   const download = $('#rateLimitModal input[name="download"]').val();
   const downloadUnit = $('#rateLimitModal select[name="downloadUnit"]').val();
 
-  request
+  consoleRequest
     .post('/ovpn/firewall?a=set_rateLimit', {
       vip,
       upload,
@@ -447,7 +460,7 @@ $(document).on('click', '#disableNetwork', function () {
 
 $(document).on('click', '#disableNetworkSubmit', function () {
   const vip = $('#disableNetworkModal input[name="vip"]').val();
-  request.post('/ovpn/firewall?a=add_blacklist', { vip }).then((data) => {
+  consoleRequest.post('/ovpn/firewall?a=add_blacklist', { vip }).then((data) => {
     $('#disableNetworkModal').modal('hide');
     message.success(data.message);
   });
@@ -464,7 +477,7 @@ $(document).on('click', '#enableNetwork', function () {
 
 $(document).on('click', '#enableNetworkSubmit', function () {
   const vip = $('#enableNetworkModal input[name="vip"]').val();
-  request.post('/ovpn/firewall?a=remove_blacklist', { vip }).then((data) => {
+  consoleRequest.post('/ovpn/firewall?a=remove_blacklist', { vip }).then((data) => {
     $('#enableNetworkModal').modal('hide');
     message.success(data.message);
   });

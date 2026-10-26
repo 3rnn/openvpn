@@ -65,7 +65,7 @@ tables.client = {
     });
   },
   ajax: function (data, callback, settings) {
-    request.get('/ovpn/client').then((data) => callback({ data }));
+    return request.get('/ovpn/client').then((data) => callback({ data }));
   },
 };
 
@@ -78,12 +78,12 @@ $('#addClientModal form').submit(function () {
   const ccdConfig = $('#addClientModal textarea[name="ccdConfig"]').val();
   const mfa = $('#addClientModal input[name="mfa"]').is(':checked');
 
-  request.post('/ovpn/client', { name, serverAddr, serverPort, config, ccdConfig, mfa }).then((data) => {
+  consoleRequest.post('/ovpn/client', { name, serverAddr, serverPort, config, ccdConfig, mfa }).then((data) => {
     vtable.ajax.reload(null, false);
     $('#addClientModal').modal('hide');
     $('#addClientModal form').trigger('reset');
     message.success(data.message);
-  });
+  }).catch(() => {});
 
   return false;
 });
@@ -117,7 +117,7 @@ $('#editClientSumbit').click(function () {
   const content = $('#editClientModal textarea[name="config"]').val();
   const type = $('#editClientModal').data('type');
 
-  request.put(`/ovpn/client/${encodeURIComponent(name)}/${type}`, { content }).then((data) => {
+  consoleRequest.put(`/ovpn/client/${encodeURIComponent(name)}/${type}`, { content }).then((data) => {
     message.success(data.message);
     $('#editClientModal').modal('hide');
   });

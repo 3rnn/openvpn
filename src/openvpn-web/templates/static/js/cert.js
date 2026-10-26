@@ -36,7 +36,7 @@ tables.cert = {
     "<'row'<'col-sm-12'tr>>" +
     "<'d-flex justify-content-between align-items-center'lip>",
   ajax: function (data, callback, settings) {
-    request.get('/ovpn/certs').then((data) => callback({ data }));
+    return request.get('/ovpn/certs').then((data) => callback({ data }));
   },
 };
 
@@ -46,7 +46,7 @@ $('#renewCertModal form').submit(function () {
 
   $('#renewCertModal').modal('hide');
 
-  request.post('/ovpn/server', { action: 'renewCert', day }).then((data) => {
+  consoleRequest.post('/ovpn/server', { action: 'renewCert', day }).then((data) => {
     message.success(data.message);
     vtable.ajax.reload(null, false);
   });

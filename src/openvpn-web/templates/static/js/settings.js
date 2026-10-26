@@ -4,7 +4,7 @@ const saveSettings = (data) => {
     message.error('更改设置前请输入当前管理员密码');
     return Promise.reject(new Error('需要当前管理员密码'));
   }
-  return request.post('/settings', {...data, currentPass}).then((result) => {
+  return consoleRequest.post('/settings', {...data, currentPass}).then((result) => {
     if ('system.base.admin_username' in data || 'system.base.admin_password' in data) {
       $('#settingsCurrentPass, #adminPassword').val('');
       location.replace('/login');
@@ -497,7 +497,7 @@ $('#emailTest').submit(function () {
   $('#emailTestBtnText').text('发送中...');
   $('#emailTestBtn').prop('disabled', true);
 
-  request
+  consoleRequest
     .post('/email/send', {
       email: $('#emailTestTo').val(),
       subject: 'Test',

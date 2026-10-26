@@ -1625,3 +1625,13 @@ choose reproducible source builds.
 When uncertain about security-sensitive behavior:
 
 stop, investigate, test and report rather than guessing.
+
+## UI/UX Design Rules
+
+All frontend UI development and modifications must follow
+the design specifications defined in ./DESIGN.md.
+
+Before making any UI changes, read DESIGN.md.
+
+Maintain consistent layouts, typography, spacing,
+colors, components, and interaction patterns.

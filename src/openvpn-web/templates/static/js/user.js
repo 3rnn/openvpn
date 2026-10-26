@@ -77,14 +77,14 @@ tables.user = {
     buttons: [
       {
         text: '导入',
-        className: 'btn-primary border-end',
+        className: 'btn-secondary',
         action: () => {
           $('#importUserModal').modal('show');
         },
       },
       {
         text: '添加',
-        className: 'btn-primary border-start',
+        className: 'btn-primary',
         action: () => {
           const elem = document.querySelector('#addUserModal input[name="expireDate"]');
           const datepicker = new Datepicker(elem, {
@@ -146,7 +146,7 @@ tables.user = {
     });
   },
   ajax: function (data, callback, settings) {
-    request.get(`/ovpn/group/${cgid}/users`).then((data) => callback({ data: data?.users, authUser: data?.authUser }));
+    return request.get(`/ovpn/group/${cgid}/users`).then((data) => callback({ data: data?.users, authUser: data?.authUser }));
   },
 };
 
@@ -297,7 +297,7 @@ importUserFileInput.addEventListener('change', (e) => {
 
 $('#importUserSubmit').click(function () {
   uploadFile.set('gid', cgid);
-  request.post('/ovpn/user', uploadFile)
+  consoleRequest.post('/ovpn/user', uploadFile)
     .then((data) => {
       $('#importUserModal').modal('hide');
       message.success(data.message);
@@ -342,7 +342,7 @@ $('#addUserModal form').submit(function (e) {
     }
   }
 
-  request
+  consoleRequest
     .post('/ovpn/user', {
       name,
       username,
@@ -447,7 +447,7 @@ $('#editUserModal form').submit(function () {
   const ovpnConfig = $('#editUserModal select[name="ovpnConfig"]').val() || '';
   const gid = $('#editUserModal input[name="gid"]').val();
 
-  request.patch('/ovpn/user', { id, name, email, username, ipAddr, expireDate, ovpnConfig, gid }).then((data) => {
+  consoleRequest.patch('/ovpn/user', { id, name, email, username, ipAddr, expireDate, ovpnConfig, gid }).then((data) => {
     vtable.ajax.reload(null, false);
     $('#editUserModal').modal('hide');
     message.success(data.message);
@@ -475,7 +475,7 @@ $(document).on('keyup', '#editUserModal input[name="ipAddr"]', function () {
 
 // 启用/禁用用户认证
 $(document).on('change', '#authUser', function () {
-  request
+  consoleRequest
     .post('/ovpn/server', {
       action: 'settings',
       key: 'auth-user',
@@ -493,7 +493,7 @@ $(document).on('change', '#authUser', function () {
 $(document).on('click', '#disableUser', function () {
   const id = vtable.row($(this).parents('tr')).data().id;
 
-  request.patch('/ovpn/user', { id, isEnable: false }).then((data) => {
+  consoleRequest.patch('/ovpn/user', { id, isEnable: false }).then((data) => {
     message.success(data.message);
     vtable.ajax.reload(null, false);
   });
@@ -503,7 +503,7 @@ $(document).on('click', '#disableUser', function () {
 $(document).on('click', '#enableUser', function () {
   const id = vtable.row($(this).parents('tr')).data().id;
 
-  request.patch('/ovpn/user', { id, isEnable: true }).then((data) => {
+  consoleRequest.patch('/ovpn/user', { id, isEnable: true }).then((data) => {
     message.success(data.message);
     vtable.ajax.reload(null, false);
   });
@@ -520,7 +520,7 @@ $('#resetMfaInfoSumbit').click(function () {
   const id = $('#resetMfaInfoModal input[name="id"]').val();
   const currentPass = $('#resetMfaInfoModal input[name="currentPass"]').val();
   if (!currentPass) { message.error('请输入当前管理员密码'); return; }
-  request.delete(`/client/mfa/${encodeURIComponent(id)}`, {currentPass}).then((data) => {
+  consoleRequest.delete(`/client/mfa/${encodeURIComponent(id)}`, {currentPass}).then((data) => {
     $('#resetMfaInfoModal input[name="currentPass"]').val('');
     $('#resetMfaInfoModal').modal('hide');
     message.success('MFA已重置');
@@ -564,7 +564,7 @@ $('#resetPassModal form').submit(function () {
     sendNotifyEmail = true;
   }
 
-  request.patch('/ovpn/user', { id, password: newPass, sendNotifyEmail }).then(() => {
+  consoleRequest.patch('/ovpn/user', { id, password: newPass, sendNotifyEmail }).then(() => {
     vtable.ajax.reload(null, false);
     $('#resetPassModal form').trigger('reset');
     $('#resetPassModal').modal('hide');
@@ -758,7 +758,7 @@ menuAdd.addEventListener('click', () => {
   setTimeout(() => {
     const name = prompt('请输入新节点名称：');
     if (name) {
-      request.post('/ovpn/group', { name, parent_id: currentNode.id }).then(() => {
+      consoleRequest.post('/ovpn/group', { name, parent_id: currentNode.id }).then(() => {
         expandedIds.add(currentNode.id);
         getTreeData();
       });
@@ -771,7 +771,7 @@ menuEdit.addEventListener('click', () => {
   setTimeout(() => {
     const newName = prompt('修改节点名称为：', currentNode.name);
     if (newName) {
-      request.patch('/ovpn/group', { id: currentNode.id, name: newName }).then(() => {
+      consoleRequest.patch('/ovpn/group', { id: currentNode.id, name: newName }).then(() => {
         getTreeData();
       });
     }
@@ -795,7 +795,7 @@ menuDelete.addEventListener('click', () => {
   contextMenu.style.display = 'none';
   setTimeout(() => {
     if (confirm(`确定要删除 "${currentNode.name}" 及其节点下所有子节点和账号数据吗？`)) {
-      request.delete(`/ovpn/group/${currentNode.id}`).then(() => {
+      consoleRequest.delete(`/ovpn/group/${currentNode.id}`).then(() => {
         getTreeData();
         vtable.ajax.reload(null, false);
       });
@@ -825,7 +825,7 @@ $(document).on('click', '.group-select-item', function (e) {
 
 $('#treeVpnConfigSumbit').click(function () {
   const config = $('#treeVpnConfigModal textarea[name="config"]').val();
-  request.patch('/ovpn/group', { id: currentNode.id, config: config?.trim()?.replace(/\n/g, '\\n') }).then(() => {
+  consoleRequest.patch('/ovpn/group', { id: currentNode.id, config: config?.trim()?.replace(/\n/g, '\\n') }).then(() => {
     $('#treeVpnConfigModal textarea[name="config"]').val('');
     $('#treeVpnConfigModal').modal('hide');
     message.success('设置VPN配置成功');
