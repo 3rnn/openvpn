@@ -175,3 +175,126 @@
   .dropdown-toggle::after {
     margin-left: 0;
   }
+
+/* Locally served console theme. No fonts or assets fetched from a CDN. */
+:root {
+  --console-accent: #0f766e;
+  --console-ink: #172b3a;
+  --console-muted: #64748b;
+  --console-border: #e2e8f0;
+}
+.console-body { background: #f6f8fa; color: var(--console-ink); font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 14px; }
+.console-topbar { height: 72px; display: flex; align-items: center; gap: 16px; padding: 0 36px; border-bottom: 1px solid var(--console-border); background: white; margin-left: 248px; }
+.console-topbar-label { color: var(--console-muted); font-size: 13px; }
+.console-account { margin-left: auto; display: flex; align-items: center; gap: 10px; max-width: 60%; overflow-wrap: anywhere; }
+.account-avatar { display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #e6f2ef; color: #0f766e; font-weight: 600; }
+.console-body .console-sidebar { --bs-offcanvas-width: 280px; background: #182633 !important; color: #e2e8f0; }
+.sidebar-brand { display: flex; align-items: center; gap: 12px; padding: 28px 24px 32px; }
+.sidebar-brand strong { display: block; font-size: 20px; letter-spacing: -.5px; color: white; }
+.sidebar-brand small { display: block; margin-top: 4px; color: #a3b4c4; font-size: 11px; letter-spacing: 1px; }
+.brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid #5eead4; border-radius: 12px; color: #5eead4; font-size: 25px; font-weight: 700; }
+.console-sidebar .offcanvas-body { padding: 0 16px 20px; flex-direction: column; }
+.console-nav { display: grid; gap: 5px; }
+.nav-caption { color: #a3b4c4; padding: 0 16px; font-size: 11px; letter-spacing: 1px; margin: 0 0 10px; }
+.nav-caption-system { margin-top: 28px; }
+.console-nav-item { display: flex; align-items: center; gap: 13px; min-height: 46px; width: 100%; padding: 11px 16px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: #cbd5e1; text-align: left; text-decoration: none; font: inherit; }
+.console-nav-item i { width: 18px; text-align: center; opacity: .8; }
+.console-nav-item:hover { color: white; background: #253746; }
+.console-nav-item[aria-current="page"] { color: #99f6e4; background: #23433f; border-color: #2c5751; font-weight: 600; }
+.sidebar-bottom { margin-top: auto; padding-top: 32px; }
+.sidebar-bottom small { display: block; color: #a3b4c4; font-size: 10px; padding: 18px 16px 0; }
+.console-main { margin-left: 248px; padding: 32px 36px; min-height: calc(100vh - 126px); }
+.console-section-heading { margin-bottom: 28px; }
+.section-eyebrow { color: var(--console-muted); font-size: 11px; margin-bottom: 10px; letter-spacing: 1px; }
+#consoleTitle { font-size: 26px; letter-spacing: -.7px; font-weight: 650; margin: 0 0 10px; }
+#consoleDescription { color: var(--console-muted); line-height: 1.7; margin: 0; }
+.console-data-layout { display: flex; align-items: flex-start; gap: 20px; }
+.console-table-column { flex: 1; min-width: 0; }
+.console-body #vtableContainer, .console-body #serverTable { border: 1px solid var(--console-border); border-radius: 10px !important; box-shadow: 0 2px 4px #172b3a03 !important; padding: 24px !important; margin: 0 0 24px !important; }
+.console-body #serverTable { overflow-x: auto; }
+.console-body .table { --bs-table-striped-bg: #f8fafb; --bs-table-border-color: #e9eef2; font-size: 13px; }
+.console-body .table th { color: #526477; font-size: 12px; font-weight: 600; background: #f8fafb; padding-top: 16px; padding-bottom: 16px; }
+.console-body .table td { padding-top: 16px; padding-bottom: 16px; }
+.console-body .dt-empty { height: 160px; vertical-align: middle; color: var(--console-muted); }
+.console-body #vtable_wrapper > .d-flex, .console-body #vtable_wrapper > .d-md-flex { gap: 16px; flex-wrap: wrap; }
+.console-body #vtable_wrapper > .row:first-child { row-gap: 12px; }
+.console-body .tree-panel { flex: 0 0 210px; width: 210px !important; padding: 16px; background: white; border: 1px solid var(--console-border); border-radius: 10px; margin: 0 !important; }
+.console-body .tree-item.selected { background: var(--console-accent); }
+.console-body .btn-primary { --bs-btn-bg: #0f766e; --bs-btn-border-color: #0f766e; --bs-btn-hover-bg: #115e59; --bs-btn-hover-border-color: #115e59; --bs-btn-active-bg: #134e4a; --bs-btn-active-border-color: #134e4a; }
+.console-body .btn-outline-primary { --bs-btn-color: #0f766e; --bs-btn-border-color: #99c9c1; --bs-btn-hover-bg: #0f766e; --bs-btn-hover-border-color: #0f766e; --bs-btn-active-bg: #115e59; }
+.console-body .btn-link, .console-body .text-primary { color: #0f766e !important; }
+.console-body .btn { border-radius: 6px; }
+.console-body .modal-content { border: 1px solid var(--console-border); border-radius: 12px; box-shadow: 0 24px 80px #0f172a24; }
+.console-body .modal-header, .console-body .modal-body, .console-body .modal-footer { padding: 20px 24px; }
+.console-body .modal-body { padding-top: 24px; padding-bottom: 24px; overflow-y: auto; }
+.console-body .modal-title { font-size: 18px; font-weight: 600; }
+.console-body .modal-footer { background: #f8fafb; gap: 8px; }
+.console-body .modal .form-control, .console-body .modal .form-select { min-height: 44px; }
+.console-body .modal .form-group { display: flow-root; }
+.console-body .modal .form-group > label { line-height: 44px; }
+.console-body .modal .row { margin-bottom: 12px !important; }
+.console-body .nav-pills { --bs-nav-pills-link-active-bg: #0f766e; --bs-nav-link-color: #0f766e; gap: 4px; flex-wrap: wrap; }
+.console-body .form-check-input:checked { background-color: #0f766e; border-color: #0f766e; }
+.console-body #settingsModal .border-0.border-bottom { border: 1px solid #cbd5e1 !important; }
+.console-body #settingsModal .mx-5 { margin-left: 12px !important; margin-right: 12px !important; }
+.console-body #settingsModal .ms-5 { margin-left: 12px !important; }
+.console-body .table th { white-space: nowrap; }
+.console-body .dt-empty { background: #fafcfd !important; }
+.console-body .tree-panel:has(#treeMenu:empty) { display: none !important; }
+.console-body .form-control, .console-body .form-select { border-color: #cbd5e1; border-radius: 6px; min-height: 38px; font-size: 13px; }
+.console-body .form-control:focus, .console-body .form-select:focus { border-color: #0f766e; box-shadow: 0 0 0 3px #0f766e18; }
+.console-body .page-link { color: #0f766e; }
+.console-body .active > .page-link { background: #0f766e; border-color: #0f766e; color: white; }
+.console-footer { margin-left: 248px; padding: 16px 36px; border-top: 1px solid var(--console-border); color: var(--console-muted); gap: 12px; }
+.skip-link { position: fixed; top: -80px; left: 16px; z-index: 1100; padding: 12px; background: white; color: #0f766e; }
+.skip-link:focus { top: 12px; }
+.console-body :focus-visible { outline: 3px solid #14b8a6; outline-offset: 3px; }
+.console-menu-toggle { display: none; }
+.portal-section { min-height: 100dvh; display: grid; align-items: center; padding: 32px 0; }
+.portal-section > .container { padding-top: 24px !important; padding-bottom: 24px !important; }
+.portal-body .card { border: 1px solid var(--console-border); box-shadow: 0 12px 48px #172b3a08; border-radius: 12px !important; }
+.portal-body .card-body { padding: 36px !important; }
+.portal-wordmark { font-size: 18px; color: #0f766e; font-weight: 750; letter-spacing: -.4px; margin-bottom: 28px; }
+.portal-title { font-size: 25px; font-weight: 650; margin-bottom: 12px; overflow-wrap: anywhere; }
+.portal-description { color: var(--console-muted); font-size: 13px; line-height: 1.8; margin-bottom: 30px; }
+.portal-label { display: block; text-align: left; margin-bottom: 8px; font-weight: 500; }
+.portal-body .form-control { min-height: 44px; }
+.portal-body #login button[type="submit"] { width: 100%; min-height: 46px; font-size: 14px; }
+.portal-body .icon-circle { color: #0f766e; background: #edf5f3; flex-shrink: 0; }
+.portal-body #client .btn { min-height: 44px; display: grid; place-items: center; }
+.portal-body #client .btn:not(#userConfig) { background: white; color: #0f766e; border-color: #cbd5e1; }
+@media (max-width: 575.98px) {
+  .portal-body .card-body { padding: 28px 24px !important; }
+  .portal-body .portal-section { padding: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .console-body *, .console-body *::before, .console-body *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+@media (min-width: 992px) {
+  .console-body .console-sidebar { position: fixed; inset: 0 auto 0 0; width: 248px; display: flex; flex-direction: column; height: 100vh; z-index: 1030; }
+  .console-sidebar .offcanvas-body { display: flex; flex: 1; overflow-y: auto; background: transparent !important; }
+}
+@media (max-width: 991.98px) {
+  .console-topbar { margin-left: 0; height: 64px; padding: 0 16px; }
+  .console-menu-toggle { display: inline-grid; place-items: center; width: 44px; height: 44px; font-size: 22px; border: 1px solid var(--console-border); }
+  .console-main { margin-left: 0; padding: 24px 16px; }
+  .console-footer { margin-left: 0; padding: 16px; flex-wrap: wrap; }
+  .console-sidebar .offcanvas-body { display: flex; }
+  .sidebar-brand .btn-close { margin-left: auto; min-width: 20px; min-height: 20px; padding: 12px; }
+  .console-data-layout { flex-direction: column; gap: 16px; }
+  .console-body .tree-panel { width: 100% !important; flex: auto; }
+  .console-table-column { width: 100%; }
+  .console-body #vtableContainer, .console-body #serverTable { padding: 16px !important; }
+  .console-body #vtableContainer { overflow-x: auto; }
+  .console-body #vtable_wrapper > .row:first-child { flex-direction: column; align-items: stretch !important; }
+  .console-body #vtable_wrapper > .row:first-child > .col { width: 100%; flex: auto; justify-content: flex-start !important; }
+  .console-body .btn, .console-body .page-link, .console-body .nav-link { min-height: 44px; }
+  .console-body .form-control, .console-body .form-select { min-height: 44px; }
+  .console-body .modal .btn-close { min-height: 20px; min-width: 20px; padding: 12px; }
+  .console-body #settingsModal .mx-5 { margin-left: 0 !important; margin-right: 0 !important; }
+  .console-body #settingsModal .ms-5 { margin-left: 0 !important; }
+  .console-body .modal-body { max-height: 70dvh; }
+  .console-body .modal .form-group > .float-end { float: none !important; width: 100% !important; margin-top: 8px; }
+  .console-body .modal-body .col-sm-10.d-flex { flex-wrap: wrap; }
+  .console-body .modal-body .col-sm-10.d-flex > .col-sm-5 { width: 100%; }
+}

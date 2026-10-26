@@ -151,7 +151,23 @@ tables.status = {
   },
 };
 
+const sectionContext = {
+  status: ['在线状态', '查看 VPN 服务状态与当前连接，管理网络访问。'],
+  user: ['VPN 账号', '按组织节点管理 VPN 账号、访问权限与账号有效期。'],
+  client: ['客户端', '创建与管理客户端配置，下载连接所需的配置文件。'],
+  firewall: ['防火墙', '管理来源、目标与访问策略，谨慎调整网络权限。'],
+  history: ['历史记录', '按时间范围检索连接记录，追溯账号访问与流量。'],
+  cert: ['证书管理', '查看证书有效期与签发状态，按需更新 VPN 证书。'],
+};
+
 const initTable = (tab) => {
+  const [title, description] = sectionContext[tab];
+  document.getElementById('consoleTitle').textContent = title;
+  document.getElementById('consoleDescription').textContent = description;
+  document.querySelectorAll('[data-console-tab]').forEach((item) => {
+    if (item.dataset.consoleTab === tab) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+  });
   $('#treeMenu').empty();
   $('#treeContainer').parent().hide();
 
@@ -206,6 +222,11 @@ if (tabs.includes(urlParams.get('tab'))) {
 } else {
   initTable('status');
 }
+
+window.addEventListener('popstate', () => {
+  const tab = new URLSearchParams(window.location.search).get('tab');
+  initTable(tabs.includes(tab) ? tab : 'status');
+});
 
 $('#vtable').on('shown.bs.popover', '.btn-delete', function () {
   const popoverInstance = bootstrap.Popover.getInstance(this);
@@ -282,6 +303,25 @@ $(document).on('click', function (e) {
   ) {
     $('.btn-delete').popover('hide');
   }
+});
+
+// Close the mobile focus trap before opening a modal or moving workspace focus.
+const sidebar = document.getElementById('offcanvasNavbar');
+sidebar.addEventListener('click', (event) => {
+  const action = event.target.closest('.console-nav-item');
+  if (!action || !sidebar.classList.contains('show')) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  sidebar.addEventListener('hidden.bs.offcanvas', () => {
+    action.click();
+    if (action.dataset.consoleTab) document.getElementById('consoleMain').focus();
+  }, { once: true });
+  bootstrap.Offcanvas.getInstance(sidebar).hide();
+}, true);
+
+$('#showStatus').click(function () {
+  window.history.pushState(null, '', '?tab=status');
+  initTable('status');
 });
 
 $('#showUser').click(function () {

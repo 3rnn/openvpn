@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -55,18 +55,20 @@
     </style>
   </head>
 
-  <body>
-    <section class="vh-100" style="background-color: #508bfc" id="login">
+  <body class="portal-body console-body">
+    <section class="portal-section" id="login">
       <div class="container py-5 h-100">
         <div class="row d-flex justify-content-center align-items-center h-100">
           <div class="col-12 col-md-8 col-lg-6 col-xl-5">
             <div class="card shadow-2-strong" style="border-radius: 1rem">
               <div class="card-body p-5 text-center">
                 <form>
-                  <h3 class="mb-5">OpenVPN WEB</h3>
+                  <p class="portal-wordmark">OpenVPN</p><h1 class="portal-title">登录控制台</h1><p class="portal-description">使用您的账号访问 VPN 服务与管理工作空间。</p>
 
                   <div data-mdb-input-init class="form-outline mb-4">
+                    <label for="loginUsername" class="portal-label">账号</label>
                     <input
+                      id="loginUsername"
                       type="text"
                       name="username"
                       class="form-control form-control-lg"
@@ -78,7 +80,9 @@
                   </div>
 
                   <div data-mdb-input-init class="form-outline mb-4">
+                    <label for="loginPassword" class="portal-label">密码</label>
                     <input
+                      id="loginPassword"
                       type="password"
                       name="password"
                       class="form-control form-control-lg"

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -314,259 +314,37 @@
     </style>
   </head>
 
-  <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="/">OpenVPN</a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#offcanvasNavbar"
-          aria-controls="offcanvasNavbar"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div
-          class="offcanvas-lg offcanvas-end flex-grow-1 bg-primary"
-          tabindex="-1"
-          id="offcanvasNavbar"
-          aria-labelledby="offcanvasNavbarLabel"
-        >
-          <div class="offcanvas-header">
-            <h5 class="offcanvas-title text-white" id="offcanvasNavbarLabel">OpenVPN</h5>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="offcanvas"
-              data-bs-target="#offcanvasNavbar"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="offcanvas-body">
-            <ul class="navbar-nav flex-row flex-wrap ms-md-auto">
-              <li class="nav-item dropdown">
-                <button
-                  type="button"
-                  class="btn btn-link nav-link dropdown-toggle"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  data-bs-display="static"
-                >
-                  管理
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li>
-                    <span class="dropdown-item" role="button" id="showUser">
-                      <svg width="1em" height="1em" fill="currentColor" class="bi" viewBox="0 0 16 16">
-                        <path
-                          d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z"
-                        />
-                      </svg>
-                      VPN账号
-                    </span>
-                  </li>
-                  <li>
-                    <span class="dropdown-item" role="button" id="showClient">
-                      <svg width="1em" height="1em" fill="currentColor" class="bi" viewBox="0 0 16 16">
-                        <path
-                          d="M2.5 13.5A.5.5 0 0 1 3 13h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zM2 2h12s2 0 2 2v6s0 2-2 2H2s-2 0-2-2V4s0-2 2-2z"
-                        />
-                      </svg>
-                      客户端
-                    </span>
-                  </li>
-                  <li>
-                    <span class="dropdown-item" role="button" id="showFirewall">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="currentColor"
-                        class="bi bi-shield-shaded"
-                        viewBox="0 0 16 16"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M8 14.933a1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"
-                        />
-                      </svg>
-                      防火墙
-                    </span>
-                  </li>
-                  <li>
-                    <hr class="dropdown-divider" />
-                  </li>
-                  <li>
-                    <span class="dropdown-item" role="button" id="showHistory">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="currentColor"
-                        class="bi bi-clock-history"
-                        viewBox="0 0 16 16"
-                      >
-                        <path
-                          d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.24.54-.555 1.038zm-.964 1.205q.183-.183.35-.378l.758.653a8 8 0 0 1-.401.432z"
-                        />
-                        <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z" />
-                        <path
-                          d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5"
-                        />
-                      </svg>
-                      历史记录
-                    </span>
-                  </li>
-                  <li>
-                    <hr class="dropdown-divider" />
-                  </li>
-                  <li>
-                    <h6 class="dropdown-header">openvpn</h6>
-                  </li>
-                  <li>
-                    <span class="dropdown-item" role="button" id="sconfig">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1em"
-                        height="1em"
-                        fill="currentColor"
-                        class="bi bi-card-heading"
-                        viewBox="0 0 16 16"
-                      >
-                        <path
-                          d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2z"
-                        />
-                        <path
-                          d="M3 8.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5m0-5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5z"
-                        />
-                      </svg>
-                      配置文件
-                    </span>
-                  </li>
-                  <li>
-                    <span class="dropdown-item" role="button" id="restartSrv">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1em"
-                        height="1em"
-                        fill="currentColor"
-                        class="bi bi-gear-wide"
-                        viewBox="0 0 16 16"
-                      >
-                        <path
-                          d="M8.932.727c-.243-.97-1.62-.97-1.864 0l-.071.286a.96.96 0 0 1-1.622.434l-.205-.211c-.695-.719-1.888-.03-1.613.931l.08.284a.96.96 0 0 1-1.186 1.187l-.284-.081c-.96-.275-1.65.918-.931 1.613l.211.205a.96.96 0 0 1-.434 1.622l-.286.071c-.97.243-.97 1.62 0 1.864l.286.071a.96.96 0 0 1 .434 1.622l-.211.205c-.719.695-.03 1.888.931 1.613l.284-.08a.96.96 0 0 1 1.187 1.187l-.081.283c-.275.96.918 1.65 1.613.931l.205-.211a.96.96 0 0 1 1.622.434l.071.286c.243.97 1.62.97 1.864 0l.071-.286a.96.96 0 0 1 1.622-.434l.205.211c.695.719 1.888.03 1.613-.931l-.08-.284a.96.96 0 0 1 1.187-1.187l.283.081c.96.275 1.65-.918.931-1.613l-.211-.205a.96.96 0 0 1 .434-1.622l.286-.071c.97-.243.97-1.62 0-1.864l-.286-.071a.96.96 0 0 1-.434-1.622l.211-.205c.719-.695.03-1.888-.931-1.613l-.284.08a.96.96 0 0 1-1.187-1.186l.081-.284c.275-.96-.918-1.65-1.613-.931l-.205.211a.96.96 0 0 1-1.622-.434zM8 12.997a4.998 4.998 0 1 1 0-9.995 4.998 4.998 0 0 1 0 9.996z"
-                        />
-                      </svg>
-                      重启服务
-                    </span>
-                  </li>
-                  <li>
-                    <span class="dropdown-item" role="button" id="manageCert">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1em"
-                        height="1em"
-                        fill="currentColor"
-                        class="bi bi-shield-shaded"
-                        viewBox="0 0 16 16"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M8 14.933a1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"
-                        />
-                      </svg>
-                      管理证书
-                    </span>
-                  </li>
-                </ul>
-              </li>
-              <li class="nav-item py-2 py-lg-1 col-12 col-lg-auto">
-                <div class="vr d-none d-lg-flex h-100 mx-lg-2 text-white"></div>
-                <hr class="d-lg-none my-2 text-white-50" />
-              </li>
-              <li class="nav-item dropdown">
-                <button
-                  type="button"
-                  class="btn btn-link nav-link"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  data-bs-display="static"
-                >
-                  <span class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      fill="currentColor"
-                      class="bi bi-person-circle"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
-                      <path
-                        fill-rule="evenodd"
-                        d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"
-                      />
-                    </svg>
-                    {{ .sysUser }}
-                  </span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li>
-                    <a class="dropdown-item" role="button" id="settings">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1em"
-                        height="1em"
-                        fill="currentColor"
-                        class="bi bi-gear"
-                        viewBox="0 0 16 16"
-                      >
-                        <path
-                          d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"
-                        />
-                        <path
-                          d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z"
-                        />
-                      </svg>
-                      系统设置
-                    </a>
-                  </li>
-                  <li>
-                    <hr class="dropdown-divider" />
-                  </li>
-                  <li>
-                    <a class="dropdown-item" role="button" id="logout" href="/logout">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1em"
-                        height="1em"
-                        fill="currentColor"
-                        class="bi bi-box-arrow-right"
-                        viewBox="0 0 16 16"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"
-                        />
-                        <path
-                          fill-rule="evenodd"
-                          d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"
-                        />
-                      </svg>
-                      退出系统
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </div>
-        </div>
+  <body class="console-body">
+    <a class="skip-link" href="#consoleMain">跳转到主要内容</a>
+    <header class="console-topbar">
+      <button class="btn console-menu-toggle" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="打开导航">☰</button>
+      <span class="console-topbar-label">管理控制台</span>
+      <span class="console-account"><span class="account-avatar" aria-hidden="true">A</span>{{ .sysUser }}</span>
+    </header>
+    <aside class="offcanvas-lg offcanvas-start console-sidebar" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+      <div class="sidebar-brand"><span class="brand-mark" aria-hidden="true">O</span><div><strong id="offcanvasNavbarLabel">OpenVPN</strong><small>网络访问管理</small></div>
+        <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#offcanvasNavbar" aria-label="关闭导航"></button>
       </div>
-    </nav>
+      <div class="offcanvas-body">
+        <nav aria-label="主要导航" class="console-nav">
+          <p class="nav-caption">工作空间</p>
+          <button type="button" id="showStatus" class="console-nav-item" data-console-tab="status"><i class="fas fa-chart-line" aria-hidden="true"></i>在线状态</button>
+          <button type="button" id="showUser" class="console-nav-item" data-console-tab="user"><i class="fas fa-users" aria-hidden="true"></i>VPN 账号</button>
+          <button type="button" id="showClient" class="console-nav-item" data-console-tab="client"><i class="fas fa-laptop" aria-hidden="true"></i>客户端</button>
+          <button type="button" id="showFirewall" class="console-nav-item" data-console-tab="firewall"><i class="fas fa-shield-halved" aria-hidden="true"></i>防火墙</button>
+          <button type="button" id="showHistory" class="console-nav-item" data-console-tab="history"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i>历史记录</button>
+          <button type="button" id="manageCert" class="console-nav-item" data-console-tab="cert"><i class="fas fa-certificate" aria-hidden="true"></i>证书管理</button>
+          <p class="nav-caption nav-caption-system">系统管理</p>
+          <button type="button" id="sconfig" class="console-nav-item"><i class="fas fa-file-lines" aria-hidden="true"></i>配置文件</button>
+          <button type="button" id="settings" class="console-nav-item"><i class="fas fa-gear" aria-hidden="true"></i>系统设置</button>
+          <button type="button" id="restartSrv" class="console-nav-item"><i class="fas fa-rotate-right" aria-hidden="true"></i>重启服务</button>
+        </nav>
+        <div class="sidebar-bottom"><a id="logout" href="/logout" class="console-nav-item"><i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i>退出系统</a><small>独立维护 · OpenVPN Web</small></div>
+      </div>
+    </aside>
 
-    <div class="container-fluid">
+    <main class="console-main" id="consoleMain" tabindex="-1">
+      <div class="console-section-heading"><p class="section-eyebrow">工作空间</p><h1 id="consoleTitle">在线状态</h1><p id="consoleDescription">查看 VPN 服务状态与当前连接，管理网络访问。</p></div>
       <div id="serverTable" class="my-3 p-3 bg-body rounded shadow-sm" style="display: none">
         <table class="table table-borderless m-0 text-center">
           <thead class="border-bottom" style="--bs-border-width: 2px">
@@ -590,20 +368,20 @@
         </table>
       </div>
 
-      <div class="d-flex">
+      <div class="console-data-layout">
         <div class="tree-panel my-3 me-3" style="width: 250px">
           <div id="treeContainer">
             <ul id="treeMenu" class="tree-menu"></ul>
           </div>
         </div>
 
-        <div class="flex-grow-1">
+        <div class="console-table-column">
           <div id="vtableContainer" class="p-3 bg-body rounded shadow-sm">
             <table id="vtable" class="table table-striped align-middle my-2" style="width: 100%"></table>
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
     <div class="modal fade" tabindex="-1" id="addUserModal" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -2328,7 +2106,7 @@
     </div>
 
     <footer
-      class="fixed-bottom border-top bg-light d-flex justify-content-between align-items-center px-1"
+      class="console-footer d-flex justify-content-between align-items-center"
       style="font-size: 12px"
     >
       <span>{{ .server.Version }}</span>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -33,19 +33,19 @@
     </style>
   </head>
 
-  <body>
-    <section class="vh-100 bg-light" id="client">
+  <body class="portal-body console-body">
+    <section class="portal-section" id="client">
       <div class="container py-5 h-100">
         <div class="row d-flex justify-content-center align-items-center h-100">
           <div class="col-12 col-md-8 col-lg-6 col-xl-5">
             <div class="card shadow-2-strong" style="border-radius: 1rem">
               <div class="card-body p-5 text-center">
-                <h3 class="mb-5" id="welcome">Welcome</h3>
+                <p class="portal-wordmark">OpenVPN</p><h1 class="portal-title" id="welcome">用户中心</h1><p class="portal-description">下载客户端，管理连接配置与账号安全。</p>
                 <div class="mb-5">
                   <p class="section-title">OpenVPN Connect 下载:</p>
 
                   <div class="d-flex justify-content-center mb-3">
-                    <a href="{{ .ClientUrl.Windows }}" class="icon-circle mx-2">
+                    <a href="{{ .ClientUrl.Windows }}" aria-label="下载 Windows 客户端" class="icon-circle mx-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="2rem"
@@ -59,7 +59,7 @@
                         />
                       </svg>
                     </a>
-                    <a href="{{ .ClientUrl.Macos }}" class="icon-circle mx-2">
+                    <a href="{{ .ClientUrl.Macos }}" aria-label="下载 macOS 客户端" class="icon-circle mx-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="2rem"
@@ -76,7 +76,7 @@
                         />
                       </svg>
                     </a>
-                    <a target="_blank" href="{{ .ClientUrl.Linux }}" class="icon-circle mx-2">
+                    <a target="_blank" href="{{ .ClientUrl.Linux }}" aria-label="下载 Linux 客户端" class="icon-circle mx-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="2rem"
@@ -97,7 +97,7 @@
                   </div>
 
                   <div class="d-flex justify-content-center">
-                    <a target="_blank" href="{{ .ClientUrl.Android }}" class="icon-circle mx-2">
+                    <a target="_blank" href="{{ .ClientUrl.Android }}" aria-label="下载 Android 客户端" class="icon-circle mx-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="2rem"
@@ -113,7 +113,7 @@
                     </a>
                     <a
                       target="_blank"
-                      href="{{ .ClientUrl.Ios }}"
+                      href="{{ .ClientUrl.Ios }}" aria-label="下载 iOS 客户端"
                       class="icon-circle mx-2 ios-text text-decoration-none"
                     >
                       iOS
