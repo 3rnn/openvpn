@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.2-hardened — 2026-11-10
+
+Client profile fix on top of v1.1.1-hardened (admin console fixes are unchanged).
+
+- Creating a client whose name already has PKI material (for example a revoked client, whose private key EasyRSA keeps) now fails with HTTP 409 and asks for a new name, instead of silently reusing incomplete or revoked key material.
+- The client list only shows regular `*.ovpn` profiles with a valid name; temporary `.profile.*` files, symlinks and other files are hidden. An unreadable clients directory now returns an error instead of an empty list.
+- The clients directory is created with mode 0700; certificate issuance is checked before the profile is written, and the temporary profile is always removed on failure.
+
 ## v1.1.1-hardened — 2026-11-10
 
 Image `3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49` (linux/amd64), built from `ecacd1910679c11a372b665deb3aaef5292701ce`. Admin console presentation-layer fixes only; no API, auth, certificate or firewall changes. The mutable `stable` tag was moved to this same digest on 2026-11-10 with owner approval (no rebuild).
