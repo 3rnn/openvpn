@@ -151,10 +151,21 @@ genclient() {
  [[ "$mfa" == false || "$mfa" == true ]] || fail 'invalid MFA flag'
  # EasyRSA mutates a shared index; serialize issuance with a private flock.
  exec 9>"$OVPN_DATA/.pki.lock";flock -x 9
- if [[ ! -f "$EASYRSA_PKI/private/$name.key" ]];then /usr/share/easy-rsa/easyrsa --batch build-client-full "$name" nopass >/dev/null;fi
+ # A revoked client can retain its private key while EasyRSA moves its issued
+ # certificate away. Never silently reuse incomplete or revoked PKI state.
+ if [[ -f "$EASYRSA_PKI/private/$name.key" && -f "$EASYRSA_PKI/issued/$name.crt" ]];then
+  openssl verify -CAfile "$EASYRSA_PKI/ca.crt" -CRLfile "$EASYRSA_PKI/crl.pem" -crl_check "$EASYRSA_PKI/issued/$name.crt" >/dev/null 2>&1 || fail 'client name already has PKI material; choose a new name'
+ elif [[ -e "$EASYRSA_PKI/private/$name.key" || -L "$EASYRSA_PKI/private/$name.key" || -e "$EASYRSA_PKI/issued/$name.crt" || -L "$EASYRSA_PKI/issued/$name.crt" ]];then
+  fail 'client name already has PKI material; choose a new name'
+ else
+  /usr/share/easy-rsa/easyrsa --batch build-client-full "$name" nopass >/dev/null
+ fi
+ [[ -s "$EASYRSA_PKI/issued/$name.crt" ]] || fail 'client certificate issuance incomplete'
  private_state
  temp=$(mktemp "$OVPN_DATA/clients/.profile.XXXXXXXX")
- trap 'rm -f -- "${temp:-}"' EXIT
+ # EXIT runs after this function's local variables are gone. Capture the
+ # validated temporary path now so a failed certificate read cannot leave it.
+ trap "rm -f -- '$temp'" EXIT
  proto=${OVPN_PROTO/-server/-client}
  cat > "$temp" <<EOF
 client

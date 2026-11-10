@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -176,6 +177,63 @@ func TestClientGenerationPassesRuntimeArgumentsAndWritesValidatedCCD(t *testing.
 	}
 	if _, err := os.Stat(capture); !os.IsNotExist(err) {
 		t.Fatal("unsafe creation invoked external command")
+	}
+}
+
+func TestClientListShowsOnlyNamedProfiles(t *testing.T) {
+	authTestDB(t)
+	configureTestAdmin(t)
+	old := ovData
+	ovData = t.TempDir()
+	t.Cleanup(func() { ovData = old })
+	clientsDir := filepath.Join(ovData, "clients")
+	if err := os.Mkdir(clientsDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"valid.ovpn", ".profile.abcd1234", "notes.txt", ".ovpn"} {
+		if err := os.WriteFile(filepath.Join(clientsDir, name), []byte("inert test data"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink("valid.ovpn", filepath.Join(clientsDir, "alias.ovpn")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(clientsDir, "directory.ovpn"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	b := newBrowser(setupRouter(ovpn{}))
+	loginBrowser(t, b, "admin")
+	w := b.request("GET", "/ovpn/client", nil)
+	if w.Code != 200 {
+		t.Fatalf("client list: %d %s", w.Code, w.Body)
+	}
+	var clients []ClientConfigData
+	if err := json.Unmarshal(w.Body.Bytes(), &clients); err != nil {
+		t.Fatal(err)
+	}
+	if len(clients) != 1 || clients[0].Name != "valid" || clients[0].FullName != "valid.ovpn" {
+		t.Fatalf("unexpected client list: %#v", clients)
+	}
+}
+
+func TestClientGenerationReportsPreviouslyUsedName(t *testing.T) {
+	authTestDB(t)
+	configureTestAdmin(t)
+	old := ovData
+	ovData = t.TempDir()
+	t.Cleanup(func() { ovData = old })
+	bin := t.TempDir()
+	script := "#!/bin/sh\nprintf '%s\\n' 'client name already has PKI material; choose a new name' >&2\nexit 1\n"
+	if err := os.WriteFile(filepath.Join(bin, "docker-entrypoint.sh"), []byte(script), 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin)
+	b := newBrowser(setupRouter(ovpn{}))
+	loginBrowser(t, b, "admin")
+	b.csrf(t)
+	w := b.request("POST", "/ovpn/client", url.Values{"name": {"reused"}, "serverAddr": {"vpn.example"}, "serverPort": {"52188"}})
+	if w.Code != 409 || !strings.Contains(w.Body.String(), "请使用新名称") {
+		t.Fatalf("previously used name: %d %s", w.Code, w.Body)
 	}
 }
 

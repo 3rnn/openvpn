@@ -1363,12 +1363,23 @@ func setupRouter(ov ovpn) *gin.Engine {
 		ovpn.GET("/client", func(c *gin.Context) {
 			clients := make([]ClientConfigData, 0)
 
-			files, _ := os.ReadDir(filepath.Join(ovData, "clients"))
+			files, err := os.ReadDir(filepath.Join(ovData, "clients"))
+			if err != nil {
+				securityError(c, 500, "client directory unavailable")
+				return
+			}
 			for _, file := range files {
-				finfo, _ := file.Info()
+				name, ok := strings.CutSuffix(file.Name(), ".ovpn")
+				if !ok || !connectionIdentity.MatchString(name) || file.Type()&os.ModeSymlink != 0 {
+					continue
+				}
+				finfo, err := file.Info()
+				if err != nil || !finfo.Mode().IsRegular() {
+					continue
+				}
 
 				f := ClientConfigData{
-					Name:     strings.TrimSuffix(file.Name(), filepath.Ext(file.Name())),
+					Name:     name,
 					FullName: file.Name(),
 					File:     fmt.Sprintf("/ovpn/download/%s", file.Name()),
 					Date:     finfo.ModTime().Local().Format("2006-01-02 15:04:05"),
@@ -1546,7 +1557,10 @@ func setupRouter(ov ovpn) *gin.Engine {
 
 			clientsDir := filepath.Join(ovData, "clients")
 
-			os.MkdirAll(clientsDir, 0755)
+			if err := os.MkdirAll(clientsDir, 0700); err != nil {
+				securityError(c, 500, "client directory unavailable")
+				return
+			}
 
 			clientsRoot, err := os.OpenRoot(clientsDir)
 			if err != nil {
@@ -1561,6 +1575,10 @@ func setupRouter(ov ovpn) *gin.Engine {
 				if os.IsNotExist(err) {
 					cmd := exec.Command("docker-entrypoint.sh", "genclient", name, serverAddr, serverPort, config, ccdConfig, mfa)
 					if out, err := cmd.CombinedOutput(); err != nil {
+						if strings.Contains(string(out), "client name already has PKI material; choose a new name") {
+							securityError(c, http.StatusConflict, "客户端名称已有证书记录，请使用新名称")
+							return
+						}
 						if len(out) == 0 {
 							out = []byte(err.Error())
 						}
