@@ -28,7 +28,9 @@ async function openPage({width=1440,tab='client',populated=false,delay=0,fail=fa
       '/csrf':{csrfToken:'synthetic-presentation-token'},
       '/ovpn/client':clients,
       '/ovpn/group':populated?[{id:1,parent_id:null,name:'合成测试组织'}]:[],
-      '/ovpn/group/null/users':{users:populated?[user]:[],authUser:true},
+      // Mirrors the real backend: no group selected returns nothing; the UI must select the root group.
+      '/ovpn/group/null/users':{users:[],authUser:true},
+      '/ovpn/group/1/users':{users:populated?[user]:[],authUser:true},
       '/ovpn/online-client':{server:{Address:'vpn.example.test:1194',Status:'运行中',BytesIn:'128 KB',BytesOut:'256 KB',RunDate:'2026-10-01 10:00:00'},clients:populated?[{id:1,username:user.username,commonName:'engineering-fixture',vip:'10.8.0.20',vip6:'',rip:'192.0.2.20',sendBytes:0,recvBytes:0,connDate:'2026-10-01 10:30:00',onlineTime:'00:12:30',isNftBlacklist:false}]:[]},
       '/ovpn/firewall':populated?[{id:1,sip:'10.8.0.0/24',dip:'192.0.2.0/24',sg:[],dg:[],policy:'accept',status:true,comment:'合成测试规则',createdAt:'2026-10-01'}]:[],
       '/ovpn/certs':populated?[{name:'server-fixture',type:'服务器',status:'正常',notBefore:'2026-01-01',notAfter:'2030-01-01',expiresIn:'1162'}]:[],

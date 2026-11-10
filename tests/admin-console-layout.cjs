@@ -36,7 +36,8 @@ async function openPage(width=1440,file='index.html',populated=false) {
     if(populated) {
       const users=[{id:1,gid:1,username:'demo.engineering',ipAddr:'10.8.0.20',ovpnConfig:'engineering.ovpn',mfaEnabled:true,isEnable:true,name:'演示账号',email:'demo@example.test',expireDate:'2030-01-01',createdAt:'2026-01-01',updatedAt:'2026-01-01'}];
       api['/ovpn/group']=[{id:1,parent_id:null,name:'演示组织（合成数据）'}];
-      api['/ovpn/group/null/users']={users,authUser:true};
+      // Mirrors the real backend: accounts are listed for the selected (root) group, not for /group/null.
+      api['/ovpn/group/1/users']={users,authUser:true};
       api['/ovpn/group/1']={name:'演示组织（合成数据）'};
     }
     return route.fulfill({json:api[url.pathname]||{}});

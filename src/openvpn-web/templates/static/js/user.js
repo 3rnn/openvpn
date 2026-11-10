@@ -146,14 +146,16 @@ tables.user = {
     });
   },
   ajax: function (data, callback, settings) {
-    return request.get(`/ovpn/group/${cgid}/users`).then((data) => callback({ data: data?.users, authUser: data?.authUser }));
+    // Wait for the group tree to pick a group instead of requesting /group/null/users.
+    const load = () => request.get(`/ovpn/group/${cgid}/users`).then((data) => callback({ data: data?.users ?? [], authUser: data?.authUser }));
+    return cgid == null ? treeLoaded.then(load) : load();
   },
 };
 
 // 显示用户详情
 $(document).on('click', '#showUserOffcanvas', async function () {
   const data = vtable.row($(this).parents('tr')).data();
-  const oc = new bootstrap.Offcanvas($('#userOffcanvas'));
+  const oc = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('userOffcanvas'));
 
   const ed = new Date(data.expireDate);
   const now = new Date();
@@ -538,31 +540,34 @@ $(document).on('click', '#resetPass', function () {
   $('#resetPassModal').modal('show');
 });
 
-$(document).on('keyup', '#resetPassModal input[name="newPassAgain"]', function () {
+// Compare both fields on every edit: editing the first field after the
+// confirmation matched must disable submit again.
+function checkResetPassMatch() {
   const newPss = $('#resetPassModal input[name="newPass"]').val();
   const newPassAgain = $('#resetPassModal input[name="newPassAgain"]').val();
+  const mismatch = newPassAgain !== '' && newPassAgain !== newPss;
 
-  if (newPassAgain == newPss) {
-    $('#resetPassModal .form-text').addClass('d-none');
-    $('#resetPassModal input[name="newPassAgain"]').removeClass('border border-danger');
-    $('#resetPassModal :submit').removeAttr('disabled');
-  } else {
-    $('#resetPassModal .form-text').text('密码不一致！');
-    $('#resetPassModal .form-text').addClass('text-danger');
-    $('#resetPassModal input[name="newPassAgain"]').addClass('border border-danger');
-    $('#resetPassModal .form-text').removeClass('d-none');
-    $('#resetPassModal :submit').attr('disabled', true);
-  }
+  $('#resetPassModal .form-text').text(mismatch ? '密码不一致！' : '').toggleClass('d-none', !mismatch).toggleClass('text-danger', mismatch);
+  $('#resetPassModal input[name="newPassAgain"]').toggleClass('border border-danger', mismatch).attr('aria-invalid', mismatch ? 'true' : null);
+  $('#resetPassModal :submit').prop('disabled', mismatch);
+  return !mismatch;
+}
+
+$(document).on('input', '#resetPassModal input[name="newPass"], #resetPassModal input[name="newPassAgain"]', checkResetPassMatch);
+
+$('#resetPassModal').on('show.bs.modal', function () {
+  $('#resetPassModal input[name="newPass"], #resetPassModal input[name="newPassAgain"]').val('');
+  checkResetPassMatch();
 });
 
-$('#resetPassModal form').submit(function () {
+$('#resetPassModal form').submit(function (e) {
   const id = $('#resetPassModal input[name="id"]').val();
   const newPass = $('#resetPassModal input[name="newPassAgain"]').val();
+  if (!checkResetPassMatch() || newPass !== $('#resetPassModal input[name="newPass"]').val()) return false;
 
-  let sendNotifyEmail = false;
-  if ($(document.activeElement).text() === '保存&发送邮件') {
-    sendNotifyEmail = true;
-  }
+  // submitter is reliable in every browser; Safari does not focus clicked buttons.
+  const submitter = e.originalEvent?.submitter || document.activeElement;
+  const sendNotifyEmail = submitter?.id === 'resetPassSendEmail';
 
   consoleRequest.patch('/ovpn/user', { id, password: newPass, sendNotifyEmail }).then(() => {
     vtable.ajax.reload(null, false);
@@ -698,6 +703,15 @@ function refreshTree(data) {
     expandedIds.add(tree[0].id);
   }
   renderTree(tree, treeMenu);
+
+  // Without a selected group the list requested /group/null/users and showed
+  // "暂无VPN账号" although accounts exist. Default to the root group and keep
+  // the current selection highlighted across re-renders.
+  const previous = cgid;
+  if (cgid == null || !data.some((g) => String(g.id) === String(cgid))) cgid = tree[0]?.id ?? null;
+  treeMenu.querySelector(`.tree-item[data-id="${CSS.escape(String(cgid))}"]`)?.classList.add('selected');
+  // A first load is already waiting on treeLoaded; reload only when an existing selection disappeared.
+  if (previous != null && cgid !== previous && vtable && document.getElementById('consoleMain').dataset.section === 'user') vtable.ajax.reload(null, false);
 }
 
 const contextMenu = document.getElementById('contextMenu');
@@ -832,8 +846,9 @@ $('#treeVpnConfigSumbit').click(function () {
   });
 });
 
+// The account list waits on this when no group is selected yet (see tables.user.ajax).
+let treeLoaded = Promise.resolve();
 export function getTreeData() {
-  request.get('/ovpn/group').then((data) => {
-    refreshTree(data);
-  });
+  treeLoaded = request.get('/ovpn/group').then(refreshTree).catch(() => {});
+  return treeLoaded;
 }

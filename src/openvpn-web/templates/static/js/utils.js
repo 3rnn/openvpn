@@ -15,6 +15,11 @@
 
     open(type = 'info', content, duration, onClose) {
       duration = duration == 0 ? duration : (duration || 3) * 1000;
+      // Do not stack identical notices (e.g. repeated failures of the same request).
+      const duplicate = [...document.querySelectorAll('#message .message-notice:not(.message-leaving)')].some(
+        (el) => el.dataset.type === type && el.dataset.content === String(content)
+      );
+      if (duplicate) return;
 
       const html = `
     <div class="message-notice">
@@ -28,6 +33,7 @@
     `;
 
       const $msgDiv = $(html).appendTo('#message');
+      $msgDiv.attr({ 'data-type': type, 'data-content': String(content) });
       $msgDiv.find('.message-text').text(content);
       $msgDiv.removeClass('move-up-leave').addClass('move-up-enter');
       setTimeout(() => {
@@ -35,7 +41,7 @@
       }, 300);
       if (duration != 0) {
         setTimeout(function () {
-          $msgDiv.removeClass('move-up-enter').addClass('move-up-leave');
+          $msgDiv.removeClass('move-up-enter').addClass('move-up-leave message-leaving');
           setTimeout(() => {
             $msgDiv.removeClass('move-up-leave').remove();
           }, 300);
@@ -112,7 +118,7 @@
       return this.csrfPromise;
     }
 
-    async request(method, url, data = null) {
+    async request(method, url, data = null, { quiet = false } = {}) {
       const target = new URL(url, location.origin);
       if (target.origin !== location.origin) throw new Error('拒绝跨站请求');
       const options = { method, headers: {}, credentials: 'same-origin', redirect: 'manual' };
@@ -139,7 +145,15 @@
         }
         if (target.pathname === '/login' || target.pathname === '/logout') await this.csrfToken(true);
         return body;
-      } catch (error) {
+      } catch (caught) {
+        let error = caught;
+        // fetch() rejects with a browser TypeError ("Failed to fetch") when the server is unreachable.
+        if (error instanceof TypeError) {
+          error = new Error('无法连接到服务器，请检查网络或服务是否正在运行', { cause: caught });
+          error.network = true;
+        }
+        // Background refreshes report failures inline instead of raising a toast every tick.
+        if (quiet) throw error;
         // Never automatically replay mutations after a rejected token.
         if (error.message.includes('UNIQUE constraint failed: user.ip_addr')) message.error('IP已经使用');
         else if (error.message.includes('UNIQUE constraint failed: user.username')) message.error('用户名已存在');
@@ -148,8 +162,8 @@
       }
     }
 
-    get(url) {
-      return this.request('GET', url);
+    get(url, options) {
+      return this.request('GET', url, null, options);
     }
 
     put(url, data) {

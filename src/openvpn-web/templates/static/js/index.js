@@ -110,17 +110,11 @@ tables.status = {
     "<'row'<'col-sm-12'tr>>" +
     "<'d-md-flex justify-content-between align-items-center'lip>",
   fnInitComplete: function () {
-    const interval = setInterval(() => {
-      if ($('#serverTable').is(':hidden')) {
-        clearInterval(interval);
-      } else {
-        vtable.ajax.reload(null, false);
-        // vtable.columns.adjust().draw(false);
-      }
-    }, 1000);
+    if (document.getElementById('consoleMain').dataset.section === 'status') startStatusPolling();
   },
   ajax: function (data, callback, settings) {
-    return request.get('/ovpn/online-client').then((res) => {
+    return request.get('/ovpn/online-client', { quiet: true }).then((res) => {
+      setStatusPollNotice(false);
       const now = new Date();
       res?.clients.forEach((i) => {
         i.downSpeed = 0;
@@ -131,27 +125,51 @@ tables.status = {
           const old = row.data();
           const t = (now - old.lastTime) / 1000;
 
-          i.downSpeed = (i.sendBytes - old.sendBytes) / t;
-          i.upSpeed = (i.recvBytes - old.recvBytes) / t;
+          if (t > 0) {
+            i.downSpeed = (i.sendBytes - old.sendBytes) / t;
+            i.upSpeed = (i.recvBytes - old.recvBytes) / t;
+          }
         }
 
         i.lastTime = now;
       });
 
+      const summary = (value) => escapeHTML(value) || '<span class="text-body-secondary">—</span>';
       $('#serverTable tbody').html(`
         <tr>
-          <td>${escapeHTML(res?.server.Address)}</td>
-          <td>${escapeHTML(res?.server.Status)}</td>
-          <td>${escapeHTML(res?.server.BytesIn)}</td>
-          <td>${escapeHTML(res?.server.BytesOut)}</td>
-          <td>${escapeHTML(res?.server.RunDate)}</td>
+          <td>${summary(res?.server.Address)}</td>
+          <td>${summary(res?.server.Status)}</td>
+          <td>${summary(res?.server.BytesIn)}</td>
+          <td>${summary(res?.server.BytesOut)}</td>
+          <td>${summary(res?.server.RunDate)}</td>
         </tr>
       `);
 
       callback({ data: res?.clients });
+    }).catch((error) => {
+      // A refresh failed after data was shown: keep the last rows, say so inline
+      // and keep retrying. The first load still surfaces the table error state.
+      if (vtable && vtable.data().any()) {
+        setStatusPollNotice(true);
+        callback({ data: vtable.rows().data().toArray() });
+        return;
+      }
+      throw error;
     });
   },
 };
+
+function setStatusPollNotice(show) {
+  let notice = document.getElementById('statusPollNotice');
+  if (!show) { notice?.remove(); return; }
+  if (notice) return;
+  notice = document.createElement('div');
+  notice.id = 'statusPollNotice';
+  notice.className = 'status-poll-notice';
+  notice.setAttribute('role', 'status');
+  notice.textContent = '与服务器的连接中断，正在自动重试…（表格保留最近一次数据）';
+  document.getElementById('vtableContainer').before(notice);
+}
 
 const sectionContext = {
   status: ['在线状态', '查看 VPN 服务状态与当前连接，管理网络访问。'],
@@ -162,6 +180,30 @@ const sectionContext = {
   cert: ['证书管理', '查看证书有效期与签发状态，按需更新 VPN 证书。'],
 };
 
+// Online status refresh: exactly one poller, never overlapping requests,
+// paused while the browser tab is hidden and stopped when leaving the section.
+// (Previously a setInterval per table init could stack after quick switching.)
+const STATUS_POLL_MS = 1000;
+let statusPoll = null;
+function stopStatusPolling() {
+  if (!statusPoll) return;
+  statusPoll.active = false;
+  clearTimeout(statusPoll.timer);
+  statusPoll = null;
+}
+function startStatusPolling() {
+  stopStatusPolling();
+  const poll = { active: true, timer: null };
+  statusPoll = poll;
+  const schedule = () => { if (poll.active) poll.timer = setTimeout(tick, STATUS_POLL_MS); };
+  const tick = () => {
+    if (!poll.active) return;
+    if (document.hidden) return schedule();
+    vtable.ajax.reload(schedule, false);
+  };
+  schedule();
+}
+
 // Load the local locale once before any DataTable can be created/destroyed.
 // language.url initializes asynchronously and can resurrect a destroyed table
 // when operators switch sections quickly.
@@ -171,6 +213,8 @@ const tableLanguage = await fetch('/static/zh.json', { credentials: 'same-origin
 let tableGeneration = 0;
 const initTable = (tab) => {
   const generation = ++tableGeneration;
+  stopStatusPolling();
+  setStatusPollNotice(false);
   document.getElementById('consoleMain').dataset.section = tab;
   const [title, description] = sectionContext[tab];
   document.getElementById('consoleTitle').textContent = title;
@@ -391,8 +435,9 @@ $('#sconfig').click(function () {
 $('#editServerSumbit').click(function () {
   const content = $('#editServerModal textarea[name="config"]').val();
 
-  $('#editServerModal').modal('hide');
+  // Keep the editor open until the save succeeds so a failed save never loses edits.
   consoleRequest.post('/ovpn/server', { action: 'updateConfig', content }).then((data) => {
+    $('#editServerModal').modal('hide');
     message.success(data.message);
   });
 });
@@ -463,6 +508,7 @@ $(document).on('click', '#disableNetworkSubmit', function () {
   consoleRequest.post('/ovpn/firewall?a=add_blacklist', { vip }).then((data) => {
     $('#disableNetworkModal').modal('hide');
     message.success(data.message);
+    vtable.ajax.reload(null, false);
   });
 });
 
@@ -480,13 +526,14 @@ $(document).on('click', '#enableNetworkSubmit', function () {
   consoleRequest.post('/ovpn/firewall?a=remove_blacklist', { vip }).then((data) => {
     $('#enableNetworkModal').modal('hide');
     message.success(data.message);
+    vtable.ajax.reload(null, false);
   });
 });
 
 // 显示在线客户端详情
 $(document).on('click', '#showOnlineClientOffcanvas', async function () {
   const data = vtable.row($(this).parents('tr')).data();
-  const oc = new bootstrap.Offcanvas($('#onlineClientOffcanvas'));
+  const oc = bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('onlineClientOffcanvas'));
 
   const user = await request.get(`/ovpn/user?username=${encodeURIComponent(data.username)}`);
 
@@ -512,13 +559,13 @@ $(document).on('click', '#showOnlineClientOffcanvas', async function () {
       <div class="col-7 desc-value">${escapeHTML(data.vip)}</div>
     </div>
    ${
-     data.vip6 &&
+     data.vip6 ?
      `
        <div class="desc-item row">
          <div class="col-5 desc-label">VPN IPV6</div>
          <div class="col-7 desc-value">${escapeHTML(data.vip6)}</div>
        </div>
-     `
+     ` : ''
    }
     <div class="desc-item row">
       <div class="col-5 desc-label">上传流量</div>
@@ -538,7 +585,7 @@ $(document).on('click', '#showOnlineClientOffcanvas', async function () {
     </div>
     <div class="desc-item row">
       <div class="col-5 desc-label">禁止网络</div>
-      <div class="col-7 desc-value">${data.isNftBlackList ? '是' : '否'}</div>
+      <div class="col-7 desc-value">${data.isNftBlacklist ? '是' : '否'}</div>
     </div>
     `;
 

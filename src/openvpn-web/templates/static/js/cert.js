@@ -44,9 +44,8 @@ tables.cert = {
 $('#renewCertModal form').submit(function () {
   const day = $('#renewCertModal input[name="day"]').val();
 
-  $('#renewCertModal').modal('hide');
-
   consoleRequest.post('/ovpn/server', { action: 'renewCert', day }).then((data) => {
+    $('#renewCertModal').modal('hide');
     message.success(data.message);
     vtable.ajax.reload(null, false);
   });
