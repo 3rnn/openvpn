@@ -20,6 +20,7 @@
 
 ## 部署要点
 
+- 分步部署指南：https://github.com/3rnn/openvpn/blob/security/hardened-v1/DEPLOY_DOCKER.md
 - 使用仓库部署指南和 Compose，不只运行一个没有持久化与权限配置的 `docker run`。
 - root + Docker 默认 capabilities + `NET_ADMIN`，显式 `/dev/net/tun`；不使用 privileged 或 host network。
 - 默认 VPN `1194/udp`，Web 仅 `127.0.0.1:8833`；远程管理用 SSH 隧道或受控 HTTPS 代理。

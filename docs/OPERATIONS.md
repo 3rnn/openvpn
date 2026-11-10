@@ -2,6 +2,7 @@
 
 > 2026-10-25 发布补充：所有者已手动搭建本地环境并确认客户端连接成功，随后授权正式发布。此为用户报告，独立于 89 项自动隔离验收；自动测试的外部 VPN 项仍记为 NOT_TESTED。下文“未验证”网络范围指自动化/完整现场覆盖，不否定上述手动连接结果；不代表完整 DNS、LAN、MTU、吞吐、撤销或真实 LDAP 已验证。
 
+- 分步部署指南：[DEPLOY_DOCKER.md](../DEPLOY_DOCKER.md)
 - 新服务器：[INSTALL.md](../INSTALL.md)
 - 版本切换、迁移与回滚：[UPGRADE.md](../UPGRADE.md)
 - 停机一致性归档、私有权限恢复、CA 连续性：[BACKUP_RESTORE.md](../BACKUP_RESTORE.md)

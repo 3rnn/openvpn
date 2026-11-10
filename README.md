@@ -1,5 +1,7 @@
 # OpenVPN Web 独立加固版
 
+**第一次部署？** 按 [DEPLOY_DOCKER.md](DEPLOY_DOCKER.md) 一步步操作：准备服务器 → 启动容器 → 登录后台 → 开放端口 → 创建第一个客户端 → 升级与备份。下文是完整参考说明。
+
 > 2026-11-10 `v1.1.2-hardened`：在 v1.1.1 基础上修复客户端配置：已有或已吊销的证书名称不再被静默复用（返回 409，提示使用新名称）；客户端列表只显示合法的 `.ovpn` 文件；clients 目录权限 0700。本版验证：`go vet`、`go test`（含两项新测试）、容器启动冒烟（OpenVPN 初始化与 tun0、`/login` 200、未登录 401/403、`ca.key` 600），以及容器内实际验证：吊销后复用同名被拒绝、新名称正常签发、重启后数据保留。真实客户端连接、转发与 LDAP 未在本版测试。
 >
 > 2026-11-10 `v1.1.1-hardened`：仅修复 Web 后台展示层（在线状态轮询、表格与弹窗、错误提示），未改 API、认证、证书、防火墙或网络逻辑。本版验证：`go test` 与 `go vet`、29 项浏览器回归、容器启动冒烟（OpenVPN 初始化与 tun0、`/login` 200、未登录 401/403、PKI 私钥权限 600、重启后数据保留）。本版未重跑 89 项隔离验收，真实客户端连接、转发与 LDAP 未在本版测试。
@@ -57,7 +59,7 @@ VPN 客户端 → 服务器公网 IP:1194/udp → 容器 OpenVPN
 
 ## 7. 快速安装
 
-以下在完成 Docker 安装后，由管理员在服务器 root shell 执行。`/opt/openvpn` 必须不存在；现有部署请读 [UPGRADE.md](UPGRADE.md)，不能重复初始化覆盖。
+新手请直接看 [DEPLOY_DOCKER.md](DEPLOY_DOCKER.md)，它对每一步都有说明和成功检查。以下在完成 Docker 安装后，由管理员在服务器 root shell 执行。`/opt/openvpn` 必须不存在；现有部署请读 [UPGRADE.md](UPGRADE.md)，不能重复初始化覆盖。
 
 ```bash
 set -eu
@@ -190,6 +192,7 @@ docker compose down
 
 ## 21. 文档、源码与贡献
 
+- [DEPLOY_DOCKER.md](DEPLOY_DOCKER.md)：Docker 部署分步指南（含首次登录、创建客户端、升级、离线导入镜像）。
 - [INSTALL.md](INSTALL.md)：全新 Debian 13 安装。
 - [UPGRADE.md](UPGRADE.md)：升级、迁移与回滚。
 - [BACKUP_RESTORE.md](BACKUP_RESTORE.md)：完整一致性备份与私密恢复。
