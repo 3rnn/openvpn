@@ -2,6 +2,8 @@
 
 ## v1.1.2-hardened — 2026-11-10
 
+Image `3rnn/openvpn:v1.1.2-hardened@sha256:0e637729aab170d31c3acd7a9f05cbf3335a94c52cf9ae00c9912dd71a92620c` (linux/amd64), built from `d74321ec34139c4fcc8146f4c5e547ca4b666369`. The mutable `stable` tag points at this same digest (moved 2026-11-10 with owner approval, no rebuild).
+
 Client profile fix on top of v1.1.1-hardened (admin console fixes are unchanged).
 
 - Creating a client whose name already has PKI material (for example a revoked client, whose private key EasyRSA keeps) now fails with HTTP 409 and asks for a new name, instead of silently reusing incomplete or revoked key material.

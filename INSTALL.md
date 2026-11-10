@@ -107,13 +107,13 @@ docker compose ps
 显式克隆加固文档分支，不能假设 `main` 已含本版文件。保存文档提交 ID；正式发布后使用发布说明提供的固定文档入口。本 Compose 必须显示以下不可变镜像：
 
 ```text
-3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49
+3rnn/openvpn:v1.1.2-hardened@sha256:0e637729aab170d31c3acd7a9f05cbf3335a94c52cf9ae00c9912dd71a92620c
 ```
 
-构建提交固定为 `ecacd1910679c11a372b665deb3aaef5292701ce`，后续文档提交不同是正常的，不因此重建已发布镜像。核对拉取后的 metadata：
+构建提交固定为 `d74321ec34139c4fcc8146f4c5e547ca4b666369`，后续文档提交不同是正常的，不因此重建已发布镜像。核对拉取后的 metadata：
 
 ```bash
-docker image inspect 3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49 \
+docker image inspect 3rnn/openvpn:v1.1.2-hardened@sha256:0e637729aab170d31c3acd7a9f05cbf3335a94c52cf9ae00c9912dd71a92620c \
   --format '{{.Os}}/{{.Architecture}} {{index .Config.Labels "org.opencontainers.image.revision"}}'
 ```
 

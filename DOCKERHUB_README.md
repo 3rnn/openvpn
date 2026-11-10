@@ -1,20 +1,22 @@
 # OpenVPN Web 独立加固版
 
+> 2026-11-10 `v1.1.2-hardened`：在 v1.1.1 基础上修复客户端配置：已有或已吊销的证书名称不再被静默复用（返回 409，提示使用新名称）；客户端列表只显示合法的 `.ovpn` 文件；clients 目录权限 0700。本版验证：`go vet`、`go test`（含两项新测试）、容器启动冒烟（OpenVPN 初始化与 tun0、`/login` 200、未登录 401/403、`ca.key` 600），以及容器内实际验证：吊销后复用同名被拒绝、新名称正常签发、重启后数据保留。真实客户端连接、转发与 LDAP 未在本版测试。
+>
 > 2026-11-10 `v1.1.1-hardened`：仅修复 Web 后台展示层（在线状态轮询、表格与弹窗、错误提示），未改 API、认证、证书、防火墙或网络逻辑。本版验证：`go test` 与 `go vet`、29 项浏览器回归、容器启动冒烟（OpenVPN 初始化与 tun0、`/login` 200、未登录 401/403、PKI 私钥权限 600、重启后数据保留）。本版未重跑 89 项隔离验收，真实客户端连接、转发与 LDAP 未在本版测试。
 >
 > `v1.1.0-hardened` 的 2026-10-25 发布补充：所有者已手动搭建本地环境并确认客户端连接成功，随后授权正式发布。此为用户报告，独立于 89 项自动隔离验收；自动测试的外部 VPN 项仍记为 NOT_TESTED。下文“未验证”网络范围指自动化/完整现场覆盖，不否定上述手动连接结果；不代表完整 DNS、LAN、MTU、吞吐、撤销或真实 LDAP 已验证。
 
 面向 **Debian 13 + Docker** 的 OpenVPN 与 Web 管理面板，源自 `GavinTan/openvpn`，由 `3rnn/openvpn` 独立维护，非上游官方发行；保留 MIT 许可证。应用从审查过的源码编译，不下载上游应用二进制。
 
-**正式发行 `v1.1.1-hardened`，仅 `linux/amd64`。**
+**正式发行 `v1.1.2-hardened`，仅 `linux/amd64`。**
 
 ```text
-3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49
-构建提交 / OCI revision：ecacd1910679c11a372b665deb3aaef5292701ce
+3rnn/openvpn:v1.1.2-hardened@sha256:0e637729aab170d31c3acd7a9f05cbf3335a94c52cf9ae00c9912dd71a92620c
+构建提交 / OCI revision：d74321ec34139c4fcc8146f4c5e547ca4b666369
 源码仓库：https://github.com/3rnn/openvpn
 ```
 
-已发布版本不可重建覆盖。Git 正式标签应对应构建提交；更新的部署文档单独追溯。生产固定版本 + digest，不自动跟随可变 `stable`/`latest`。`stable` 当前（2026-11-10 起）指向 `v1.1.1-hardened` 同一 digest，仅作便利标签。
+已发布版本不可重建覆盖。Git 正式标签应对应构建提交；更新的部署文档单独追溯。生产固定版本 + digest，不自动跟随可变 `stable`/`latest`。`stable` 当前（2026-11-10 起）指向 `v1.1.2-hardened` 同一 digest，仅作便利标签。
 
 ## 部署要点
 
