@@ -1,6 +1,8 @@
 # Docker Hub 发布资料与溯源
 
-> 2026-10-25 发布补充：所有者已手动搭建本地环境并确认客户端连接成功，随后授权正式发布。此为用户报告，独立于 89 项自动隔离验收；自动测试的外部 VPN 项仍记为 NOT_TESTED。下文“未验证”网络范围指自动化/完整现场覆盖，不否定上述手动连接结果；不代表完整 DNS、LAN、MTU、吞吐、撤销或真实 LDAP 已验证。
+> 2026-11-10 `v1.1.1-hardened`：仅修复 Web 后台展示层（在线状态轮询、表格与弹窗、错误提示），未改 API、认证、证书、防火墙或网络逻辑。本版验证：`go test` 与 `go vet`、29 项浏览器回归、容器启动冒烟（OpenVPN 初始化与 tun0、`/login` 200、未登录 401/403、PKI 私钥权限 600、重启后数据保留）。本版未重跑 89 项隔离验收，真实客户端连接、转发与 LDAP 未在本版测试。
+>
+> `v1.1.0-hardened` 的 2026-10-25 发布补充：所有者已手动搭建本地环境并确认客户端连接成功，随后授权正式发布。此为用户报告，独立于 89 项自动隔离验收；自动测试的外部 VPN 项仍记为 NOT_TESTED。下文“未验证”网络范围指自动化/完整现场覆盖，不否定上述手动连接结果；不代表完整 DNS、LAN、MTU、吞吐、撤销或真实 LDAP 已验证。
 
 ## 简短描述
 
@@ -15,16 +17,16 @@ Docker Hub 完整描述使用根目录 [DOCKERHUB_README.md](../DOCKERHUB_README
 | 字段 | 值 |
 | --- | --- |
 | 仓库 | `3rnn/openvpn` |
-| 正式版本 | `v1.1.0-hardened` |
-| 构建提交 / OCI revision | `4db21ef895e34071a9dbd8f8878d9615488e1fa9` |
+| 正式版本 | `v1.1.1-hardened` |
+| 构建提交 / OCI revision | `ecacd1910679c11a372b665deb3aaef5292701ce` |
 | 平台 | `linux/amd64` |
-| 已发布 digest | `sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683` |
+| 已发布 digest | `sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49` |
 
 ```text
-3rnn/openvpn:v1.1.0-hardened@sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683
+3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49
 ```
 
-上游历史 `v1.0.0` 已存在，保持原状；正式加固发行继续用 `v1.1.0-hardened`。发布者核对 Git 正式标签指向构建提交。后续部署文档提交与构建提交分别记录，不用较新的文档提交伪装镜像 OCI revision，不重新构建覆盖已发布版本。
+上游历史 `v1.0.0` 已存在，保持原状；正式加固发行继续用 `v1.1.1-hardened`。发布者核对 Git 正式标签指向构建提交。后续部署文档提交与构建提交分别记录，不用较新的文档提交伪装镜像 OCI revision，不重新构建覆盖已发布版本。
 
 ## 发布核对（维护者操作）
 

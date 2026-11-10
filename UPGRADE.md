@@ -1,12 +1,14 @@
 # 版本升级、迁移与回滚
 
-> 2026-10-25 发布补充：所有者已手动搭建本地环境并确认客户端连接成功，随后授权正式发布。此为用户报告，独立于 89 项自动隔离验收；自动测试的外部 VPN 项仍记为 NOT_TESTED。下文“未验证”网络范围指自动化/完整现场覆盖，不否定上述手动连接结果；不代表完整 DNS、LAN、MTU、吞吐、撤销或真实 LDAP 已验证。
+> 2026-11-10 `v1.1.1-hardened`：仅修复 Web 后台展示层（在线状态轮询、表格与弹窗、错误提示），未改 API、认证、证书、防火墙或网络逻辑。本版验证：`go test` 与 `go vet`、29 项浏览器回归、容器启动冒烟（OpenVPN 初始化与 tun0、`/login` 200、未登录 401/403、PKI 私钥权限 600、重启后数据保留）。本版未重跑 89 项隔离验收，真实客户端连接、转发与 LDAP 未在本版测试。
+>
+> `v1.1.0-hardened` 的 2026-10-25 发布补充：所有者已手动搭建本地环境并确认客户端连接成功，随后授权正式发布。此为用户报告，独立于 89 项自动隔离验收；自动测试的外部 VPN 项仍记为 NOT_TESTED。下文“未验证”网络范围指自动化/完整现场覆盖，不否定上述手动连接结果；不代表完整 DNS、LAN、MTU、吞吐、撤销或真实 LDAP 已验证。
 
-生产部署使用 **版本 + digest**，不自动跟随 `stable`/`latest`。本次正式发行 `v1.1.0-hardened`，已发布内容不能重建覆盖；仓库历史上游 `v1.0.0` 标签不能改写。
+生产部署使用 **版本 + digest**，不自动跟随 `stable`/`latest`。本次正式发行 `v1.1.1-hardened`，已发布内容不能重建覆盖；仓库历史上游 `v1.0.0` 标签不能改写。
 
 ```text
-镜像：3rnn/openvpn:v1.1.0-hardened@sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683
-构建提交：4db21ef895e34071a9dbd8f8878d9615488e1fa9
+镜像：3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49
+构建提交：ecacd1910679c11a372b665deb3aaef5292701ce
 平台：linux/amd64
 ```
 
@@ -39,7 +41,7 @@ docker inspect "$CID" --format '{{range .Mounts}}{{println .Source "->" .Destina
 从旧加固部署升级到本发行时，image 行应为：
 
 ```yaml
-image: 3rnn/openvpn:v1.1.0-hardened@sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683
+image: 3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49
 ```
 
 未来发行需使用未来正式记录中的新版本和新 digest，不复用本标签。核对后：

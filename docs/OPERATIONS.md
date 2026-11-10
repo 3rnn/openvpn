@@ -19,7 +19,7 @@ docker compose config --images
 docker compose ps
 ```
 
-生产镜像固定 `3rnn/openvpn:v1.1.0-hardened@sha256:fa5ff5f042e08d7f9ca9fe48b4faeb07609eadb0b05ba076d16193cb1e75e683`，构建提交 `4db21ef895e34071a9dbd8f8878d9615488e1fa9`，仅 amd64。不要重建覆盖版本，也不自动拉取 stable。
+生产镜像固定 `3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49`，构建提交 `ecacd1910679c11a372b665deb3aaef5292701ce`，仅 amd64。不要重建覆盖版本，也不自动拉取 stable。
 
 ## 例行检查
 
