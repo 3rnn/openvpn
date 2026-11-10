@@ -2,7 +2,7 @@
 
 ## v1.1.1-hardened — 2026-11-10
 
-Image `3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49` (linux/amd64), built from `ecacd1910679c11a372b665deb3aaef5292701ce`. Admin console presentation-layer fixes only; no API, auth, certificate or firewall changes.
+Image `3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49` (linux/amd64), built from `ecacd1910679c11a372b665deb3aaef5292701ce`. Admin console presentation-layer fixes only; no API, auth, certificate or firewall changes. The mutable `stable` tag was moved to this same digest on 2026-11-10 with owner approval (no rebuild).
 
 - Online status: one non-overlapping 1 s poller, paused in background tabs and stopped when leaving the section (quick tab switching previously stacked intervals); guard against zero-interval speed division.
 - Refresh failures no longer toast "Failed to fetch" every second: the last rows stay visible with an inline reconnecting notice; network errors are shown in Chinese and identical toasts are not stacked.

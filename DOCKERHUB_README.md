@@ -14,7 +14,7 @@
 源码仓库：https://github.com/3rnn/openvpn
 ```
 
-已发布版本不可重建覆盖。Git 正式标签应对应构建提交；更新的部署文档单独追溯。生产固定版本 + digest，不自动跟随可变 `stable`/`latest`。
+已发布版本不可重建覆盖。Git 正式标签应对应构建提交；更新的部署文档单独追溯。生产固定版本 + digest，不自动跟随可变 `stable`/`latest`。`stable` 当前（2026-11-10 起）指向 `v1.1.1-hardened` 同一 digest，仅作便利标签。
 
 ## 部署要点
 

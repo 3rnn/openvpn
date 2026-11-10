@@ -21,6 +21,7 @@ Docker Hub 完整描述使用根目录 [DOCKERHUB_README.md](../DOCKERHUB_README
 | 构建提交 / OCI revision | `ecacd1910679c11a372b665deb3aaef5292701ce` |
 | 平台 | `linux/amd64` |
 | 已发布 digest | `sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49` |
+| `stable`（可变） | 2026-11-10 起指向上述同一 digest |
 
 ```text
 3rnn/openvpn:v1.1.1-hardened@sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49
@@ -33,7 +34,7 @@ Docker Hub 完整描述使用根目录 [DOCKERHUB_README.md](../DOCKERHUB_README
 1. 发行证据记录 89 项验收通过，且安全审查没有未解决的发行阻断项。明确真实外部 VPN 握手/转发和真实 LDAP 尚未验证。
 2. 只读核对版本 manifest digest、`linux/amd64` 与镜像 revision；不能把本地 image ID 当 registry digest。
 3. 同步根安装、升级、备份文档及发布说明的固定文档入口，不把构建提交里的旧说明当新文档。
-4. `stable` 是可变便利标签，只有所有者单独授权且门禁通过后才可指向**现有同一镜像内容**；不是新构建，不改变版本 digest。本文件不宣称 stable 已发布。
+4. `stable` 是可变便利标签，只有所有者单独授权且门禁通过后才可指向**现有同一镜像内容**；不是新构建，不改变版本 digest。2026-11-10 经所有者授权，`stable` 已指向 `v1.1.1-hardened` 同一镜像，digest 同为 `sha256:839f7e9d30aa1ba4e98eb32abacccbe14904667fa686a625d46ab13875771a49`（未重建）。此前的 `stable` 是 `sha256:2dc7fc01e3ffe7b458266cde4bc101e14b4f7063cbb5229bcb0bbf501a993c66`。
 5. 发布后读取准确远程目标并记录验证结果。认证本身不证明发布成功；不得把 token、密码、私钥或完整认证配置放入命令输出、文档和报告。
 
 生产 Compose 始终固定版本 + digest，即使 stable 获批也不改为自动跟随。无需重建本次镜像、无需 UI 版本改动。
