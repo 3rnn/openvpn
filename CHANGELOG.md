@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — admin console fixes (2026-11-09)
+
+- Online status: one non-overlapping 1 s poller, paused in background tabs and stopped when leaving the section (quick tab switching previously stacked intervals); guard against zero-interval speed division.
+- Refresh failures no longer toast "Failed to fetch" every second: the last rows stay visible with an inline reconnecting notice; network errors are shown in Chinese and identical toasts are not stacked.
+- Online client details: read `isNftBlacklist` (was always "否"), no "undefined" IPv6 row, reuse one offcanvas instance (also for account details).
+- VPN accounts: select the root group by default instead of requesting `/ovpn/group/null/users` (list looked empty, "添加" sent no group).
+- Reset password: re-validate when either field changes; detect "保存&发送邮件" via the submit event's submitter (Safari); clear state on reopen.
+- Server config editor and certificate renewal stay open until the request succeeds, so a failed save keeps the input.
+- Flat refinements: stat strip for server summary, transparent table headers, white dialog footers, compact semantic row actions, solid brand mark, active nav indicator, readable page-length select.
+- Presentation only; endpoints, payloads, CSRF, auth and backend unchanged. UI fixtures now mirror the backend's `/group/null/users` behaviour.
+
 ## v1.1.0-hardened — 2026-10-26
 
 - Unified enterprise light administration console across all nine management surfaces.
